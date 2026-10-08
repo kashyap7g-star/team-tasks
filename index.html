@@ -4,137 +4,160 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Team Task Manager</title>
-  
-  <!-- Core Libraries -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Tailwind CSS for Styling -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen">
-  <div id="root"></div>
 
-  <script type="text/babel">
-    const { useState, useEffect, useMemo } = React;
+  <div class="max-w-6xl mx-auto p-6">
+    <!-- Header -->
+    <header class="mb-8 border-b border-slate-800 pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-white">Team Task Manager</h1>
+        <p class="text-slate-400 text-sm">Track team task progress by Task Group / Department</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <label for="groupFilter" class="text-sm font-medium text-slate-300">Filter Group:</label>
+        <select id="groupFilter" onchange="renderTasks()" class="bg-slate-800 text-white border border-slate-700 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+          <option value="All">All Groups</option>
+          <option value="HR">HR</option>
+          <option value="Finance">Finance</option>
+          <option value="IT">IT</option>
+          <option value="Marketing">Marketing</option>
+          <option value="Operations">Operations</option>
+        </select>
+      </div>
+    </header>
 
-    function SimpleTaskManager() {
-      const [tasks, setTasks] = useState([
-        { id: 1, title: 'Annual Audit Prep', group: 'Finance', assignee: 'Sarah Jenkins', status: 'In Progress', priority: 'High' },
-        { id: 2, title: 'Onboard New Engineers', group: 'HR', assignee: 'Alex Rivera', status: 'Not Started', priority: 'Medium' },
-        { id: 3, title: 'Server OS Patching', group: 'IT', assignee: 'David Chen', status: 'Under Review', priority: 'Urgent' }
-      ]);
-      const [selectedGroup, setSelectedGroup] = useState('All');
-      const [newTitle, setNewTitle] = useState('');
-      const [newGroup, setNewGroup] = useState('HR');
+    <!-- Task Creation Form -->
+    <form onsubmit="handleAddTask(event)" class="bg-slate-800 p-4 rounded-lg mb-6 flex flex-col md:flex-row gap-3 border border-slate-700">
+      <input 
+        type="text" 
+        id="taskTitle"
+        placeholder="Enter new task name..." 
+        required
+        class="flex-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+      />
+      <select id="taskGroup" class="bg-slate-900 border border-slate-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+        <option value="HR">HR</option>
+        <option value="Finance">Finance</option>
+        <option value="IT">IT</option>
+        <option value="Marketing">Marketing</option>
+        <option value="Operations">Operations</option>
+      </select>
+      <input 
+        type="text" 
+        id="taskAssignee"
+        placeholder="Assignee Name" 
+        class="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+      />
+      <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded text-sm font-medium transition-colors">
+        + Add Task
+      </button>
+    </form>
 
-      const filteredTasks = useMemo(() => {
-        return tasks.filter(t => selectedGroup === 'All' || t.group === selectedGroup);
-      }, [tasks, selectedGroup]);
+    <!-- Task Table -->
+    <div class="bg-slate-800 rounded-lg overflow-hidden border border-slate-700 shadow-xl">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-slate-900/60 text-slate-400 text-xs uppercase border-b border-slate-700">
+            <th class="p-3.5">Task Title</th>
+            <th class="p-3.5">Task Group</th>
+            <th class="p-3.5">Assignee</th>
+            <th class="p-3.5">Status</th>
+            <th class="p-3.5">Action</th>
+          </tr>
+        </thead>
+        <tbody id="taskTableBody" class="divide-y divide-slate-700/50 text-sm">
+          <!-- Tasks render dynamically via JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-      const addTask = (e) => {
-        e.preventDefault();
-        if (!newTitle.trim()) return;
-        setTasks([...tasks, {
-          id: Date.now(),
-          title: newTitle,
-          group: newGroup,
-          assignee: 'Unassigned',
-          status: 'Not Started',
-          priority: 'Medium'
-        }]);
-        setNewTitle('');
-      };
+  <script>
+    // Initial Task Data
+    let tasks = [
+      { id: 1, title: 'Annual Audit Prep', group: 'Finance', assignee: 'Sarah Jenkins', status: 'In Progress' },
+      { id: 2, title: 'Onboard New Engineers', group: 'HR', assignee: 'Alex Rivera', status: 'Not Started' },
+      { id: 3, title: 'Server OS Patching', group: 'IT', assignee: 'David Chen', status: 'Under Review' },
+      { id: 4, title: 'Q4 Marketing Strategy', group: 'Marketing', assignee: 'Emma Watson', status: 'Completed' }
+    ];
 
-      return (
-        <div className="max-w-6xl mx-auto p-6">
-          <header className="mb-8 border-b border-slate-800 pb-4 flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-white">Team Task Manager</h1>
-              <p className="text-slate-400 text-sm">Track team task progress by Task Group</p>
-            </div>
-            <div className="flex gap-2">
-              <label className="text-sm self-center text-slate-300">Filter Group:</label>
-              <select 
-                value={selectedGroup} 
-                onChange={(e) => setSelectedGroup(e.target.value)}
-                className="bg-slate-800 text-white border border-slate-700 rounded px-3 py-1.5 text-sm"
-              >
-                <option value="All">All Groups</option>
-                <option value="HR">HR</option>
-                <option value="Finance">Finance</option>
-                <option value="IT">IT</option>
-                <option value="Marketing">Marketing</option>
-              </select>
-            </div>
-          </header>
+    function renderTasks() {
+      const selectedGroup = document.getElementById('groupFilter').value;
+      const tableBody = document.getElementById('taskTableBody');
+      tableBody.innerHTML = '';
 
-          <!-- Add Task Form -->
-          <form onSubmit={addTask} className="bg-slate-800 p-4 rounded-lg mb-6 flex gap-3">
-            <input 
-              type="text" 
-              placeholder="Enter new task name..." 
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              className="flex-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none"
-            />
-            <select 
-              value={newGroup}
-              onChange={(e) => setNewGroup(e.target.value)}
-              className="bg-slate-900 border border-slate-700 text-white rounded px-3 py-2 text-sm"
-            >
-              <option value="HR">HR</option>
-              <option value="Finance">Finance</option>
-              <option value="IT">IT</option>
-              <option value="Marketing">Marketing</option>
+      const filteredTasks = tasks.filter(task => selectedGroup === 'All' || task.group === selectedGroup);
+
+      if (filteredTasks.length === 0) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="5" class="p-6 text-center text-slate-500">No tasks found for this Task Group.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      filteredTasks.forEach(task => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-700/30 transition-colors';
+        tr.innerHTML = `
+          <td class="p-3.5 font-medium text-white">${task.title}</td>
+          <td class="p-3.5">
+            <span class="px-2.5 py-1 text-xs font-semibold rounded bg-purple-900/50 text-purple-300 border border-purple-700/50">
+              ${task.group}
+            </span>
+          </td>
+          <td class="p-3.5 text-slate-300">${task.assignee || 'Unassigned'}</td>
+          <td class="p-3.5">
+            <select onchange="updateStatus(${task.id}, this.value)" class="bg-slate-900 border border-slate-700 text-xs rounded px-2.5 py-1 text-slate-200 focus:outline-none">
+              <option value="Not Started" ${task.status === 'Not Started' ? 'selected' : ''}>Not Started</option>
+              <option value="In Progress" ${task.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+              <option value="Under Review" ${task.status === 'Under Review' ? 'selected' : ''}>Under Review</option>
+              <option value="Completed" ${task.status === 'Completed' ? 'selected' : ''}>Completed</option>
             </select>
-            <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded text-sm font-medium">
-              Add Task
-            </button>
-          </form>
-
-          <!-- Task Table -->
-          <div className="bg-slate-800 rounded-lg overflow-hidden border border-slate-700">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-900/50 text-slate-400 text-xs uppercase border-b border-slate-700">
-                  <th className="p-3">Task Title</th>
-                  <th className="p-3">Task Group</th>
-                  <th className="p-3">Assignee</th>
-                  <th className="p-3">Priority</th>
-                  <th className="p-3">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-700/50 text-sm">
-                {filteredTasks.map((task) => (
-                  <tr key={task.id} className="hover:bg-slate-700/30">
-                    <td className="p-3 font-medium text-white">{task.title}</td>
-                    <td className="p-3">
-                      <span className="px-2 py-0.5 text-xs rounded bg-purple-900/50 text-purple-300 border border-purple-700/50">
-                        {task.group}
-                      </span>
-                    </td>
-                    <td className="p-3 text-slate-300">{task.assignee}</td>
-                    <td className="p-3">
-                      <span className="px-2 py-0.5 text-xs rounded bg-amber-900/40 text-amber-300">
-                        {task.priority}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <span className="px-2 py-0.5 text-xs rounded bg-blue-900/40 text-blue-300">
-                        {task.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      );
+          </td>
+          <td class="p-3.5">
+            <button onclick="deleteTask(${task.id})" class="text-xs text-red-400 hover:text-red-300 font-medium">Delete</button>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      });
     }
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<SimpleTaskManager />);
+    function handleAddTask(e) {
+      e.preventDefault();
+      const titleInput = document.getElementById('taskTitle');
+      const groupInput = document.getElementById('taskGroup');
+      const assigneeInput = document.getElementById('taskAssignee');
+
+      const newTask = {
+        id: Date.now(),
+        title: titleInput.value,
+        group: groupInput.value,
+        assignee: assigneeInput.value || 'Unassigned',
+        status: 'Not Started'
+      };
+
+      tasks.unshift(newTask);
+      titleInput.value = '';
+      assigneeInput.value = '';
+      renderTasks();
+    }
+
+    function updateStatus(id, newStatus) {
+      tasks = tasks.map(t => t.id === id ? { ...t, status: newStatus } : t);
+    }
+
+    function deleteTask(id) {
+      tasks = tasks.filter(t => t.id !== id);
+      renderTasks();
+    }
+
+    // Initial load
+    renderTasks();
   </script>
 </body>
 </html>
