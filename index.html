@@ -25,19 +25,31 @@
         <p class="text-slate-400 text-sm mt-1">Collaborative dashboard with multi-view tracking & department analytics</p>
       </div>
 
-      <!-- Actions -->
-      <div class="flex flex-wrap items-center gap-3">
-        <label class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition flex items-center gap-2">
+      <!-- Action Buttons -->
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="backupFullSystemJSON()" class="bg-emerald-800/80 hover:bg-emerald-700 text-emerald-200 border border-emerald-700/80 px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow">
+          <span>📤</span> Backup Database (.json)
+        </button>
+
+        <label class="bg-emerald-900/60 hover:bg-emerald-800/80 text-emerald-200 border border-emerald-700/80 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition flex items-center gap-1.5 shadow">
+          <span>📥</span> Restore Database (.json)
+          <input type="file" id="jsonDbFileInput" accept=".json" onchange="restoreSystemDatabaseJSON(event)" class="hidden" />
+        </label>
+
+        <label class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-lg text-xs font-medium cursor-pointer transition flex items-center gap-1.5">
           <span>📥</span> Import CSV
           <input type="file" id="csvFileInput" accept=".csv" onchange="importCSV(event)" class="hidden" />
         </label>
-        <button onclick="exportCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
-          <span>📤</span> Export Filtered List (Excel)
+
+        <button onclick="exportCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1.5">
+          <span>📤</span> Export CSV (Excel)
         </button>
-        <button onclick="openListsModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
+
+        <button onclick="openListsModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1.5">
           <span>⚙️</span> Manage Lists & Slicers
         </button>
-        <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 shadow-lg shadow-blue-500/20">
+
+        <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-1 shadow-lg shadow-blue-500/20">
           <span>+</span> New Task
         </button>
       </div>
@@ -61,7 +73,6 @@
 
       <!-- Dynamic Slicers Container -->
       <div class="flex flex-wrap items-center gap-3">
-        
         <!-- Assignee Slicer -->
         <div id="slicerContainer-assignee" class="flex items-center gap-1.5">
           <span class="text-xs text-slate-400 font-medium">Assignee:</span>
@@ -400,6 +411,8 @@
 
     function saveData() {
       localStorage.setItem('team_tasks_v6', JSON.stringify(tasks));
+      localStorage.setItem('team_tasks_assignees_v2', JSON.stringify(customAssignees));
+      localStorage.setItem('team_tasks_groups_v2', JSON.stringify(customGroups));
       populateYearMonthSlicer();
       renderApp();
     }
@@ -799,10 +812,10 @@
       const val = document.getElementById('newAssigneeInput').value.trim();
       if (val && !customAssignees.includes(val)) {
         customAssignees.push(val);
-        localStorage.setItem('team_tasks_assignees_v2', JSON.stringify(customAssignees));
         document.getElementById('newAssigneeInput').value = '';
         populateDropdowns();
         renderListsManager();
+        saveData();
       }
     }
 
@@ -812,19 +825,19 @@
         return;
       }
       customAssignees = customAssignees.filter(a => a !== val);
-      localStorage.setItem('team_tasks_assignees_v2', JSON.stringify(customAssignees));
       populateDropdowns();
       renderListsManager();
+      saveData();
     }
 
     function addCustomGroup() {
       const val = document.getElementById('newGroupInput').value.trim();
       if (val && !customGroups.includes(val)) {
         customGroups.push(val);
-        localStorage.setItem('team_tasks_groups_v2', JSON.stringify(customGroups));
         document.getElementById('newGroupInput').value = '';
         populateDropdowns();
         renderListsManager();
+        saveData();
       }
     }
 
@@ -834,12 +847,95 @@
         return;
       }
       customGroups = customGroups.filter(g => g !== val);
-      localStorage.setItem('team_tasks_groups_v2', JSON.stringify(customGroups));
       populateDropdowns();
       renderListsManager();
+      saveData();
     }
 
-    // CSV EXPORT
+    // 1. BACKUP FULL DATABASE (.JSON)
+    function backupFullSystemJSON() {
+      const fullDatabase = {
+        version: "2.0",
+        exportDate: new Date().toISOString(),
+        tasks: tasks,
+        customAssignees: customAssignees,
+        customGroups: customGroups,
+        slicerConfig: slicerConfig
+      };
+
+      const jsonStr = JSON.stringify(fullDatabase, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', `Task_System_Database_Backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // 2. RESTORE FULL DATABASE (.JSON)
+    function restoreSystemDatabaseJSON(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const importedDb = JSON.parse(evt.target.result);
+
+          if (!importedDb || !Array.isArray(importedDb.tasks)) {
+            alert("Error: Invalid JSON database backup file!");
+            return;
+          }
+
+          // Restore Tasks (Smart ID Merge)
+          let updatedCount = 0;
+          let createdCount = 0;
+
+          importedDb.tasks.forEach(impTask => {
+            const idx = tasks.findIndex(t => t.id === impTask.id || (t.title.toLowerCase() === impTask.title.toLowerCase() && t.group === impTask.group));
+            if (idx !== -1) {
+              tasks[idx] = { ...tasks[idx], ...impTask };
+              updatedCount++;
+            } else {
+              tasks.unshift(impTask);
+              createdCount++;
+            }
+          });
+
+          // Merge Assignees
+          if (Array.isArray(importedDb.customAssignees)) {
+            importedDb.customAssignees.forEach(a => {
+              if (!customAssignees.includes(a)) customAssignees.push(a);
+            });
+          }
+
+          // Merge Groups
+          if (Array.isArray(importedDb.customGroups)) {
+            importedDb.customGroups.forEach(g => {
+              if (!customGroups.includes(g)) customGroups.push(g);
+            });
+          }
+
+          // Restore Slicer Config
+          if (importedDb.slicerConfig) {
+            slicerConfig = { ...slicerConfig, ...importedDb.slicerConfig };
+            localStorage.setItem('team_tasks_slicers_v2', JSON.stringify(slicerConfig));
+          }
+
+          applySlicerConfig();
+          populateDropdowns();
+          saveData();
+
+          alert(`System Database Restore Successful!\n• ${updatedCount} existing tasks updated.\n• ${createdCount} new tasks added.\n• Assignees and Groups merged.`);
+        } catch (err) {
+          alert("Failed to parse database backup file. Ensure it is a valid .json file.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // STANDARD EXCEL CSV EXPORT
     function exportCSV() {
       const filtered = getFilteredTasks();
       if (filtered.length === 0) {
@@ -862,7 +958,7 @@
       document.body.removeChild(link);
     }
 
-    // SMART CSV IMPORT (OPTION A: OVERWRITE/UPDATE MATCHING TASK ID OR TITLE)
+    // STANDARD CSV IMPORT
     function importCSV(e) {
       const file = e.target.files[0];
       if (!file) return;
