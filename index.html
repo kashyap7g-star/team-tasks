@@ -75,7 +75,6 @@
           <span class="text-xs text-slate-400 font-medium">Year-Month:</span>
           <select id="filterYearMonth" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
             <option value="All">All Months</option>
-            <!-- Populated dynamically via JS -->
           </select>
         </div>
 
@@ -84,10 +83,10 @@
           <span class="text-xs text-slate-400 font-medium">Status:</span>
           <select id="filterStatus" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
             <option value="All">All Statuses</option>
-            <option value="Not Started">Not Started</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Under Review">Under Review</option>
-            <option value="Completed">Completed</option>
+            <option value="Not Started">Not Started (0%)</option>
+            <option value="In Progress">In Progress (40%)</option>
+            <option value="Under Review">Under Review (75%)</option>
+            <option value="Completed">Completed (100%)</option>
           </select>
         </div>
 
@@ -166,12 +165,12 @@
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Status</label>
-            <select id="mStatus" onchange="syncStatusWithProgress()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-              <option value="Not Started">Not Started</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Under Review">Under Review</option>
-              <option value="Completed">Completed</option>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Status (Auto-sets % Completion)</label>
+            <select id="mStatus" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+              <option value="Not Started">Not Started (0%)</option>
+              <option value="In Progress">In Progress (40%)</option>
+              <option value="Under Review">Under Review (75%)</option>
+              <option value="Completed">Completed (100%)</option>
             </select>
           </div>
           <div>
@@ -183,15 +182,6 @@
               <option value="Urgent">Urgent</option>
             </select>
           </div>
-        </div>
-
-        <!-- Completion Progress Slider -->
-        <div>
-          <div class="flex justify-between items-center mb-1">
-            <label class="text-xs font-medium text-slate-300">Completion Progress (%)</label>
-            <span id="mProgressVal" class="text-xs font-bold text-blue-400">0%</span>
-          </div>
-          <input type="range" id="mProgress" min="0" max="100" value="0" step="5" oninput="updateProgressVal(this.value)" class="w-full h-2 bg-slate-900 rounded-lg appearance-none cursor-pointer accent-blue-500" />
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -225,16 +215,24 @@
   <script>
     let currentView = 'kanban';
     
+    // AUTOMATIC PERCENTAGE CALCULATION FUNCTION
+    function getProgressByStatus(status) {
+      if (status === 'Completed') return 100;
+      if (status === 'Under Review') return 75;
+      if (status === 'In Progress') return 40;
+      return 0; // 'Not Started'
+    }
+
     let defaultData = [
-      { id: 1, title: 'Annual Financial Audit', group: 'Finance', assignee: 'Kashyap', status: 'In Progress', priority: 'High', progress: 60, startDate: '2026-10-01', endDate: '2026-10-15', comment: 'Audit team requested additional ledger statements.' },
-      { id: 2, title: 'Onboard Senior Engineers', group: 'HR', assignee: 'Melisa', status: 'Not Started', priority: 'Medium', progress: 0, startDate: '2026-10-10', endDate: '2026-10-25', comment: 'Waiting for IT to assign work laptops.' },
-      { id: 3, title: 'Server OS Security Patch', group: 'IT', assignee: 'Albus', status: 'Under Review', priority: 'Urgent', progress: 85, startDate: '2026-10-05', endDate: '2026-10-09', comment: 'Patches deployed to staging environment.' },
-      { id: 4, title: 'Q4 Marketing Strategy', group: 'Marketing', assignee: 'Brooke', status: 'Completed', priority: 'High', progress: 100, startDate: '2026-09-15', endDate: '2026-10-01', comment: 'Approved by leadership team.' }
+      { id: 1, title: 'Annual Financial Audit', group: 'Finance', assignee: 'Kashyap', status: 'In Progress', priority: 'High', startDate: '2026-10-01', endDate: '2026-10-15', comment: 'Audit team requested additional ledger statements.' },
+      { id: 2, title: 'Onboard Senior Engineers', group: 'HR', assignee: 'Melisa', status: 'Not Started', priority: 'Medium', startDate: '2026-10-10', endDate: '2026-10-25', comment: 'Waiting for IT to assign work laptops.' },
+      { id: 3, title: 'Server OS Security Patch', group: 'IT', assignee: 'Albus', status: 'Under Review', priority: 'Urgent', startDate: '2026-10-05', endDate: '2026-10-09', comment: 'Patches deployed to staging environment.' },
+      { id: 4, title: 'Q4 Marketing Strategy', group: 'Marketing', assignee: 'Brooke', status: 'Completed', priority: 'High', startDate: '2026-09-15', endDate: '2026-10-01', comment: 'Approved by leadership team.' }
     ];
 
     let tasks = [];
     try {
-      let saved = JSON.parse(localStorage.getItem('team_tasks_v4'));
+      let saved = JSON.parse(localStorage.getItem('team_tasks_v5'));
       if (Array.isArray(saved) && saved.length > 0) {
         tasks = saved.map(t => ({
           id: t.id || Date.now() + Math.random(),
@@ -243,7 +241,6 @@
           assignee: t.assignee || 'Kashyap',
           status: t.status || 'Not Started',
           priority: t.priority || 'Medium',
-          progress: typeof t.progress === 'number' ? t.progress : (t.status === 'Completed' ? 100 : 0),
           startDate: t.startDate || '',
           endDate: t.endDate || '',
           comment: t.comment || ''
@@ -259,7 +256,7 @@
 
     function getYearMonth(endDateStr) {
       if (!endDateStr) return 'Unscheduled';
-      return endDateStr.substring(0, 7); // Extracts YYYY-MM
+      return endDateStr.substring(0, 7);
     }
 
     function populateYearMonthSlicer() {
@@ -280,7 +277,7 @@
     }
 
     function saveData() {
-      localStorage.setItem('team_tasks_v4', JSON.stringify(tasks));
+      localStorage.setItem('team_tasks_v5', JSON.stringify(tasks));
       populateYearMonthSlicer();
       renderApp();
     }
@@ -321,7 +318,7 @@
       else if (currentView === 'analytics') renderAnalytics(container);
     }
 
-    // 1. KANBAN BOARD
+    // 1. KANBAN BOARD VIEW
     function renderKanban(container, filtered) {
       let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">';
       
@@ -330,6 +327,7 @@
         
         let cardsHTML = '';
         colTasks.forEach(t => {
+          const progress = getProgressByStatus(t.status);
           cardsHTML += `
             <div class="bg-slate-800 border border-slate-700 rounded-lg p-3.5 space-y-2.5 shadow-sm hover:border-slate-600 transition">
               <div class="flex justify-between items-center">
@@ -341,14 +339,14 @@
 
               ${t.comment ? `<p class="text-xs bg-slate-900/80 text-slate-300 p-2 rounded border border-slate-700/50 italic">💬 "\${t.comment}"</p>` : ''}
               
-              <!-- Progress Bar -->
+              <!-- Progress Bar derived automatically -->
               <div class="space-y-1">
                 <div class="flex justify-between text-[10px] text-slate-400 font-medium">
                   <span>Progress</span>
-                  <span class="text-blue-400 font-bold">${t.progress || 0}%</span>
+                  <span class="text-blue-400 font-bold">${progress}%</span>
                 </div>
                 <div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden border border-slate-700">
-                  <div class="bg-blue-500 h-full transition-all duration-300" style="width: ${t.progress || 0}%"></div>
+                  <div class="bg-blue-500 h-full transition-all duration-300" style="width: ${progress}%"></div>
                 </div>
               </div>
 
@@ -391,6 +389,7 @@
     function renderTable(container, filtered) {
       let rows = '';
       filtered.forEach(t => {
+        const progress = getProgressByStatus(t.status);
         rows += `
           <tr class="hover:bg-slate-700/30 transition">
             <td class="p-3.5 font-medium text-white">
@@ -404,9 +403,9 @@
             <td class="p-3.5">
               <div class="flex items-center gap-2">
                 <div class="w-14 bg-slate-900 h-1.5 rounded-full overflow-hidden border border-slate-700">
-                  <div class="bg-blue-500 h-full" style="width: ${t.progress || 0}%"></div>
+                  <div class="bg-blue-500 h-full" style="width: ${progress}%"></div>
                 </div>
-                <span class="text-xs text-slate-300 font-bold">${t.progress || 0}%</span>
+                <span class="text-xs text-slate-300 font-bold">${progress}%</span>
               </div>
             </td>
             <td class="p-3.5">
@@ -434,7 +433,7 @@
                 <th class="p-3.5">Assignee</th>
                 <th class="p-3.5">Priority</th>
                 <th class="p-3.5">Year-Month</th>
-                <th class="p-3.5">Progress</th>
+                <th class="p-3.5">Progress (%)</th>
                 <th class="p-3.5">Status</th>
                 <th class="p-3.5">Actions</th>
               </tr>
@@ -458,6 +457,7 @@
 
         let cards = '';
         groupTasks.forEach(t => {
+          const progress = getProgressByStatus(t.status);
           cards += `
             <div class="bg-slate-900 p-3.5 rounded-lg border border-slate-700/60 flex flex-col justify-between gap-2">
               <div class="flex justify-between items-start">
@@ -468,7 +468,7 @@
               ${t.comment ? `<p class="text-xs text-slate-400 italic">💬 \${t.comment}</p>` : ''}
               
               <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-800">
-                <div class="bg-purple-500 h-full" style="width: ${t.progress || 0}%"></div>
+                <div class="bg-purple-500 h-full" style="width: ${progress}%"></div>
               </div>
 
               <div class="flex items-center justify-between text-xs text-slate-400">
@@ -497,13 +497,13 @@
     // 4. ANALYTICS VIEW
     function renderAnalytics(container) {
       const total = tasks.length;
-      const avgProgress = total > 0 ? Math.round(tasks.reduce((sum, t) => sum + (t.progress || 0), 0) / total) : 0;
+      const avgProgress = total > 0 ? Math.round(tasks.reduce((sum, t) => sum + getProgressByStatus(t.status), 0) / total) : 0;
       const assignees = ['Kashyap', 'Melisa', 'Albus', 'Brooke'];
 
       let assigneeBars = '';
       assignees.forEach(a => {
         const aTasks = tasks.filter(t => t.assignee === a);
-        const aAvg = aTasks.length > 0 ? Math.round(aTasks.reduce((sum, t) => sum + (t.progress || 0), 0) / aTasks.length) : 0;
+        const aAvg = aTasks.length > 0 ? Math.round(aTasks.reduce((sum, t) => sum + getProgressByStatus(t.status), 0) / aTasks.length) : 0;
 
         assigneeBars += `
           <div>
@@ -524,7 +524,7 @@
             <div class="flex justify-between items-center mb-3">
               <div>
                 <h3 class="text-lg font-bold text-white">Overall Dashboard Completion</h3>
-                <p class="text-xs text-slate-400">Total task progress metric</p>
+                <p class="text-xs text-slate-400">Total task progress metric based on status thresholds</p>
               </div>
               <span class="text-3xl font-black text-blue-400">${avgProgress}%</span>
             </div>
@@ -550,36 +550,13 @@
     }
 
     function updateStatus(id, newStatus) {
-      tasks = tasks.map(t => {
-        if (t.id === id) {
-          let newProg = t.progress;
-          if (newStatus === 'Completed') newProg = 100;
-          else if (newStatus === 'Not Started') newProg = 0;
-          return { ...t, status: newStatus, progress: newProg };
-        }
-        return t;
-      });
+      tasks = tasks.map(t => t.id === id ? { ...t, status: newStatus } : t);
       saveData();
-    }
-
-    function updateProgressVal(val) {
-      document.getElementById('mProgressVal').innerText = val + '%';
     }
 
     function updateCharCount(val) {
       const left = 250 - val.length;
       document.getElementById('charCount').innerText = left + ' left';
-    }
-
-    function syncStatusWithProgress() {
-      const st = document.getElementById('mStatus').value;
-      if (st === 'Completed') {
-        document.getElementById('mProgress').value = 100;
-        updateProgressVal(100);
-      } else if (st === 'Not Started') {
-        document.getElementById('mProgress').value = 0;
-        updateProgressVal(0);
-      }
     }
 
     function deleteTask(id) {
@@ -595,8 +572,6 @@
       document.getElementById('mAssignee').value = 'Kashyap';
       document.getElementById('mStatus').value = 'Not Started';
       document.getElementById('mPriority').value = 'Medium';
-      document.getElementById('mProgress').value = 0;
-      updateProgressVal(0);
       document.getElementById('mStartDate').value = '';
       document.getElementById('mEndDate').value = '';
       document.getElementById('mComment').value = '';
@@ -615,8 +590,6 @@
       document.getElementById('mAssignee').value = t.assignee;
       document.getElementById('mStatus').value = t.status;
       document.getElementById('mPriority').value = t.priority;
-      document.getElementById('mProgress').value = t.progress || 0;
-      updateProgressVal(t.progress || 0);
       document.getElementById('mStartDate').value = t.startDate || '';
       document.getElementById('mEndDate').value = t.endDate || '';
       document.getElementById('mComment').value = t.comment || '';
@@ -636,18 +609,17 @@
       const assignee = document.getElementById('mAssignee').value;
       const status = document.getElementById('mStatus').value;
       const priority = document.getElementById('mPriority').value;
-      const progress = parseInt(document.getElementById('mProgress').value, 10) || 0;
       const startDate = document.getElementById('mStartDate').value;
       const endDate = document.getElementById('mEndDate').value;
       const comment = document.getElementById('mComment').value;
 
       if (taskId) {
         tasks = tasks.map(t => t.id == taskId ? {
-          ...t, title, group, assignee, status, priority, progress, startDate, endDate, comment
+          ...t, title, group, assignee, status, priority, startDate, endDate, comment
         } : t);
       } else {
         tasks.unshift({
-          id: Date.now(), title, group, assignee, status, priority, progress, startDate, endDate, comment
+          id: Date.now(), title, group, assignee, status, priority, startDate, endDate, comment
         });
       }
 
@@ -665,7 +637,8 @@
 
       let csv = "Title,Group,Assignee,Status,Priority,Progress_Percent,Year_Month,Start_Date,End_Date,Comment\n";
       filtered.forEach(t => {
-        csv += `"${t.title.replace(/"/g, '""')}","${t.group}","${t.assignee}","${t.status}","${t.priority}","${t.progress || 0}","${getYearMonth(t.endDate)}","${t.startDate || ''}","${t.endDate || ''}","${(t.comment || '').replace(/"/g, '""')}"\n`;
+        const progress = getProgressByStatus(t.status);
+        csv += `"${t.title.replace(/"/g, '""')}","${t.group}","${t.assignee}","${t.status}","${t.priority}","${progress}%","${getYearMonth(t.endDate)}","${t.startDate || ''}","${t.endDate || ''}","${(t.comment || '').replace(/"/g, '""')}"\n`;
       });
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -700,7 +673,6 @@
               assignee: cols[2] || 'Kashyap',
               status: cols[3] || 'Not Started',
               priority: cols[4] || 'Medium',
-              progress: parseInt(cols[5], 10) || 0,
               startDate: cols[7] || '',
               endDate: cols[8] || '',
               comment: cols[9] || ''
