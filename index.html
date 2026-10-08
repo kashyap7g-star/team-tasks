@@ -6,6 +6,11 @@
   <title>Team Task Manager Dashboard</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js & Chart.js DataLabels Plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <!-- PapaParse for CSV Support -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
     .modal-active { display: flex !important; }
   </style>
@@ -19,11 +24,14 @@
         <h1 class="text-2xl font-bold text-white flex items-center gap-2">
           <span>📋</span> Team Task Manager
         </h1>
-        <p class="text-slate-400 text-sm mt-1">Collaborative dashboard with multi-view tracking & department analytics</p>
+        <p class="text-slate-400 text-sm mt-1">Collaborative dashboard with multi-view tracking, custom management & department analytics</p>
       </div>
 
       <!-- Actions -->
       <div class="flex flex-wrap items-center gap-3">
+        <button onclick="openManageOptionsModal()" class="bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-700/60 px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
+          <span>⚙️</span> Manage Assignees & Groups
+        </button>
         <label class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition flex items-center gap-2">
           <span>📥</span> Import CSV
           <input type="file" id="csvFileInput" accept=".csv" onchange="importCSV(event)" class="hidden" />
@@ -42,11 +50,8 @@
       
       <!-- View Switcher -->
       <div class="flex bg-slate-900 p-1 rounded-lg border border-slate-700/60 self-start md:self-auto">
-        <button onclick="switchView('kanban')" id="tab-kanban" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition bg-blue-600 text-white">
-          Kanban Board
-        </button>
-        <button onclick="switchView('table')" id="tab-table" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition text-slate-400 hover:text-slate-200">
-          Table View
+        <button onclick="switchView('table')" id="tab-table" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition bg-blue-600 text-white">
+          Table / Board View
         </button>
         <button onclick="switchView('grouped')" id="tab-grouped" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition text-slate-400 hover:text-slate-200">
           Grouped View
@@ -62,11 +67,7 @@
         <div class="flex items-center gap-1.5">
           <span class="text-xs text-slate-400 font-medium">Assignee:</span>
           <select id="filterAssignee" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
-            <option value="All">All Assignees</option>
-            <option value="Kashyap">Kashyap</option>
-            <option value="Melisa">Melisa</option>
-            <option value="Albus">Albus</option>
-            <option value="Brooke">Brooke</option>
+            <!-- Populated dynamically -->
           </select>
         </div>
 
@@ -94,14 +95,7 @@
         <div class="flex items-center gap-1.5">
           <span class="text-xs text-slate-400 font-medium">Group:</span>
           <select id="filterGroup" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
-            <option value="All">All Groups</option>
-            <option value="HR">HR</option>
-            <option value="Finance">Finance</option>
-            <option value="IT">IT</option>
-            <option value="Marketing">Marketing</option>
-            <option value="Operations">Operations</option>
-            <option value="Sales">Sales</option>
-            <option value="Legal">Legal</option>
+            <!-- Populated dynamically -->
           </select>
         </div>
 
@@ -141,31 +135,28 @@
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Task Group / Dept *</label>
+            <div class="flex justify-between items-center mb-1">
+              <label class="text-xs font-medium text-slate-300">Task Group *</label>
+              <button type="button" onclick="openManageOptionsModal('groups')" class="text-[10px] text-purple-400 hover:underline">+ Add/Edit</button>
+            </div>
             <select id="mGroup" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-              <option value="HR">HR</option>
-              <option value="Finance">Finance</option>
-              <option value="IT">IT</option>
-              <option value="Marketing">Marketing</option>
-              <option value="Operations">Operations</option>
-              <option value="Sales">Sales</option>
-              <option value="Legal">Legal</option>
+              <!-- Populated dynamically -->
             </select>
           </div>
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Assignee *</label>
+            <div class="flex justify-between items-center mb-1">
+              <label class="text-xs font-medium text-slate-300">Assignee *</label>
+              <button type="button" onclick="openManageOptionsModal('assignees')" class="text-[10px] text-purple-400 hover:underline">+ Add/Edit</button>
+            </div>
             <select id="mAssignee" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-              <option value="Kashyap">Kashyap</option>
-              <option value="Melisa">Melisa</option>
-              <option value="Albus">Albus</option>
-              <option value="Brooke">Brooke</option>
+              <!-- Populated dynamically -->
             </select>
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Status (Auto-sets % Completion)</label>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Status (Auto-sets Progress)</label>
             <select id="mStatus" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
               <option value="Not Started">Not Started (0%)</option>
               <option value="In Progress">In Progress (40%)</option>
@@ -212,10 +203,75 @@
     </div>
   </div>
 
+  <!-- CONFIRMATION DELETE MODAL -->
+  <div id="confirmModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-800 border border-slate-700 w-full max-w-sm rounded-xl p-6 shadow-2xl text-center space-y-4">
+      <div class="text-3xl">⚠️</div>
+      <h3 class="text-lg font-bold text-white">Delete Task?</h3>
+      <p id="confirmMsg" class="text-xs text-slate-300">Are you sure you want to delete this task? This action cannot be undone.</p>
+      <div class="flex justify-center gap-3 pt-2">
+        <button onclick="closeConfirmModal()" class="px-4 py-2 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg">Cancel</button>
+        <button id="confirmDeleteBtn" class="px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-500 text-white rounded-lg shadow-lg">Delete Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANAGE ASSIGNEES & GROUPS MODAL -->
+  <div id="manageOptionsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-800 border border-slate-700 w-full max-w-xl rounded-xl p-6 shadow-2xl space-y-6">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+        <h3 class="text-lg font-bold text-white">Manage Assignees & Task Groups</h3>
+        <button onclick="closeManageOptionsModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Manage Assignees -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">👤 Assignees</h4>
+          
+          <div class="flex gap-2">
+            <input type="text" id="newAssigneeInput" placeholder="Add new name..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500" />
+            <button onclick="addCustomAssignee()" class="bg-purple-600 hover:bg-purple-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold">+ Add</button>
+          </div>
+
+          <div id="assigneeListContainer" class="max-h-48 overflow-y-auto space-y-1.5 pr-1 border border-slate-700/60 p-2 rounded-lg bg-slate-900/50">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Manage Groups -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">📁 Task Groups</h4>
+          
+          <div class="flex gap-2">
+            <input type="text" id="newGroupInput" placeholder="Add new group..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500" />
+            <button onclick="addCustomGroup()" class="bg-purple-600 hover:bg-purple-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold">+ Add</button>
+          </div>
+
+          <div id="groupListContainer" class="max-h-48 overflow-y-auto space-y-1.5 pr-1 border border-slate-700/60 p-2 rounded-lg bg-slate-900/50">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-3 border-t border-slate-700">
+        <button onclick="closeManageOptionsModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg text-xs font-semibold">Done</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    let currentView = 'kanban';
-    
-    // AUTOMATIC PERCENTAGE CALCULATION FUNCTION
+    let currentView = 'table';
+    let pendingDeleteId = null;
+
+    // Default Options
+    let defaultAssignees = ['Kashyap', 'Melisa', 'Albus', 'Brooke'];
+    let defaultGroups = ['HR', 'Finance', 'IT', 'Marketing', 'Operations', 'Sales', 'Legal'];
+
+    let assignees = JSON.parse(localStorage.getItem('team_assignees_v6')) || defaultAssignees;
+    let groups = JSON.parse(localStorage.getItem('team_groups_v6')) || defaultGroups;
+
+    // Helper for Automatic Status Progress
     function getProgressByStatus(status) {
       if (status === 'Completed') return 100;
       if (status === 'Under Review') return 75;
@@ -232,13 +288,13 @@
 
     let tasks = [];
     try {
-      let saved = JSON.parse(localStorage.getItem('team_tasks_v5'));
+      let saved = JSON.parse(localStorage.getItem('team_tasks_v6'));
       if (Array.isArray(saved) && saved.length > 0) {
         tasks = saved.map(t => ({
           id: t.id || Date.now() + Math.random(),
           title: t.title || 'Untitled Task',
-          group: t.group || 'HR',
-          assignee: t.assignee || 'Kashyap',
+          group: t.group || groups[0] || 'HR',
+          assignee: t.assignee || assignees[0] || 'Kashyap',
           status: t.status || 'Not Started',
           priority: t.priority || 'Medium',
           startDate: t.startDate || '',
@@ -253,6 +309,97 @@
     }
 
     const STATUSES = ['Not Started', 'In Progress', 'Under Review', 'Completed'];
+
+    function saveAssigneesAndGroups() {
+      localStorage.setItem('team_assignees_v6', JSON.stringify(assignees));
+      localStorage.setItem('team_groups_v6', JSON.stringify(groups));
+      populateDropdownOptions();
+      renderApp();
+    }
+
+    function addCustomAssignee() {
+      const input = document.getElementById('newAssigneeInput');
+      const val = input.value.trim();
+      if (!val) return;
+      if (!assignees.includes(val)) {
+        assignees.push(val);
+        saveAssigneesAndGroups();
+        renderManageLists();
+      }
+      input.value = '';
+    }
+
+    function deleteCustomAssignee(name) {
+      if (assignees.length <= 1) {
+        alert("At least one assignee must remain.");
+        return;
+      }
+      assignees = assignees.filter(a => a !== name);
+      saveAssigneesAndGroups();
+      renderManageLists();
+    }
+
+    function addCustomGroup() {
+      const input = document.getElementById('newGroupInput');
+      const val = input.value.trim();
+      if (!val) return;
+      if (!groups.includes(val)) {
+        groups.push(val);
+        saveAssigneesAndGroups();
+        renderManageLists();
+      }
+      input.value = '';
+    }
+
+    function deleteCustomGroup(name) {
+      if (groups.length <= 1) {
+        alert("At least one task group must remain.");
+        return;
+      }
+      groups = groups.filter(g => g !== name);
+      saveAssigneesAndGroups();
+      renderManageLists();
+    }
+
+    function renderManageLists() {
+      const aContainer = document.getElementById('assigneeListContainer');
+      const gContainer = document.getElementById('groupListContainer');
+
+      aContainer.innerHTML = assignees.map(a => `
+        <div class="flex justify-between items-center text-xs bg-slate-800 px-2.5 py-1.5 rounded border border-slate-700">
+          <span class="font-semibold text-slate-200">👤 ${a}</span>
+          <button onclick="deleteCustomAssignee('${a}')" class="text-red-400 hover:text-red-300 font-bold">✕</button>
+        </div>
+      `).join('');
+
+      gContainer.innerHTML = groups.map(g => `
+        <div class="flex justify-between items-center text-xs bg-slate-800 px-2.5 py-1.5 rounded border border-slate-700">
+          <span class="font-semibold text-purple-300">📁 ${g}</span>
+          <button onclick="deleteCustomGroup('${g}')" class="text-red-400 hover:text-red-300 font-bold">✕</button>
+        </div>
+      `).join('');
+    }
+
+    function populateDropdownOptions() {
+      // 1. Assignee Filter Dropdown
+      const fAssignee = document.getElementById('filterAssignee');
+      const curFA = fAssignee.value || 'All';
+      fAssignee.innerHTML = '<option value="All">All Assignees</option>' + assignees.map(a => `<option value="${a}">${a}</option>`).join('');
+      fAssignee.value = assignees.includes(curFA) ? curFA : 'All';
+
+      // 2. Group Filter Dropdown
+      const fGroup = document.getElementById('filterGroup');
+      const curFG = fGroup.value || 'All';
+      fGroup.innerHTML = '<option value="All">All Groups</option>' + groups.map(g => `<option value="${g}">${g}</option>`).join('');
+      fGroup.value = groups.includes(curFG) ? curFG : 'All';
+
+      // 3. Modal Form Dropdowns
+      const mAssignee = document.getElementById('mAssignee');
+      mAssignee.innerHTML = assignees.map(a => `<option value="${a}">${a}</option>`).join('');
+
+      const mGroup = document.getElementById('mGroup');
+      mGroup.innerHTML = groups.map(g => `<option value="${g}">${g}</option>`).join('');
+    }
 
     function getYearMonth(endDateStr) {
       if (!endDateStr) return 'Unscheduled';
@@ -277,7 +424,7 @@
     }
 
     function saveData() {
-      localStorage.setItem('team_tasks_v5', JSON.stringify(tasks));
+      localStorage.setItem('team_tasks_v6', JSON.stringify(tasks));
       populateYearMonthSlicer();
       renderApp();
     }
@@ -312,111 +459,58 @@
       const container = document.getElementById('viewContainer');
       const filtered = getFilteredTasks();
 
-      if (currentView === 'kanban') renderKanban(container, filtered);
-      else if (currentView === 'table') renderTable(container, filtered);
+      if (currentView === 'table') renderTable(container, filtered);
       else if (currentView === 'grouped') renderGrouped(container, filtered);
       else if (currentView === 'analytics') renderAnalytics(container);
     }
 
-    // 1. KANBAN BOARD VIEW
-    function renderKanban(container, filtered) {
-      let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">';
-      
-      STATUSES.forEach(status => {
-        const colTasks = filtered.filter(t => t.status === status);
-        
-        let cardsHTML = '';
-        colTasks.forEach(t => {
-          const progress = getProgressByStatus(t.status);
-          cardsHTML += `
-            <div class="bg-slate-800 border border-slate-700 rounded-lg p-3.5 space-y-2.5 shadow-sm hover:border-slate-600 transition">
-              <div class="flex justify-between items-center">
-                <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-purple-900/60 text-purple-300 border border-purple-700/50">${t.group}</span>
-                <span class="px-2 py-0.5 text-[10px] font-bold rounded ${getPriorityStyle(t.priority)}">${t.priority}</span>
-              </div>
-              
-              <h4 class="font-semibold text-sm text-white">${t.title}</h4>
+    // CIRCULAR PROGRESS SVG RENDERER
+    function renderCircularProgress(percent) {
+      const radius = 16;
+      const circumference = 2 * Math.PI * radius;
+      const offset = circumference - (percent / 100) * circumference;
 
-              ${t.comment ? `<p class="text-xs bg-slate-900/80 text-slate-300 p-2 rounded border border-slate-700/50 italic">💬 "\${t.comment}"</p>` : ''}
-              
-              <!-- Progress Bar derived automatically -->
-              <div class="space-y-1">
-                <div class="flex justify-between text-[10px] text-slate-400 font-medium">
-                  <span>Progress</span>
-                  <span class="text-blue-400 font-bold">${progress}%</span>
-                </div>
-                <div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden border border-slate-700">
-                  <div class="bg-blue-500 h-full transition-all duration-300" style="width: ${progress}%"></div>
-                </div>
-              </div>
+      let colorClass = 'text-blue-500';
+      if (percent === 100) colorClass = 'text-emerald-400';
+      else if (percent === 75) colorClass = 'text-purple-400';
+      else if (percent === 40) colorClass = 'text-amber-400';
 
-              <div class="flex items-center justify-between text-xs text-slate-400 pt-1 border-t border-slate-700/60">
-                <span>👤 <strong class="text-slate-200">${t.assignee}</strong></span>
-                <div class="flex items-center gap-2">
-                  <button onclick="editTask(${t.id})" class="text-blue-400 hover:text-blue-300 font-bold">Edit</button>
-                  <button onclick="deleteTask(${t.id})" class="text-red-400 hover:text-red-300 font-bold">✕</button>
-                </div>
-              </div>
-
-              <div class="text-[10px] text-slate-400 flex justify-between">
-                <span>📅 Due: ${t.endDate || 'N/A'}</span>
-                <span class="text-purple-300 font-semibold">${getYearMonth(t.endDate)}</span>
-              </div>
-              
-              <select onchange="updateStatus(${t.id}, this.value)" class="w-full bg-slate-900 border border-slate-700 text-xs rounded px-2 py-1 text-slate-300 focus:outline-none">
-                ${STATUSES.map(s => `<option value="\${s}" ${s === t.status ? 'selected' : ''}>Move: ${s}</option>`).join('')}
-              </select>
-            </div>
-          `;
-        });
-
-        html += `
-          <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-3 flex flex-col min-h-[450px]">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-700/60 mb-3">
-              <h3 class="font-bold text-xs text-slate-300 uppercase tracking-wider">${status}</h3>
-              <span class="bg-slate-700 text-slate-200 text-xs px-2 py-0.5 rounded-full font-bold">${colTasks.length}</span>
-            </div>
-            <div class="space-y-3 flex-1">${cardsHTML || '<p class="text-xs text-slate-500 italic text-center pt-8">No tasks</p>'}</div>
-          </div>
-        `;
-      });
-
-      html += '</div>';
-      container.innerHTML = html;
+      return `
+        <div class="relative inline-flex items-center justify-center w-11 h-11">
+          <svg class="w-11 h-11 transform -rotate-90">
+            <circle cx="22" cy="22" r="${radius}" stroke-width="3.5" class="text-slate-800" stroke="currentColor" fill="transparent" />
+            <circle cx="22" cy="22" r="${radius}" stroke-width="3.5" class="${colorClass} transition-all duration-500" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round" stroke="currentColor" fill="transparent" />
+          </svg>
+          <span class="absolute text-[10px] font-extrabold text-white">${percent}%</span>
+        </div>
+      `;
     }
 
-    // 2. TABLE VIEW
+    // 1. TABLE / BOARD INTEGRATED VIEW
     function renderTable(container, filtered) {
       let rows = '';
       filtered.forEach(t => {
         const progress = getProgressByStatus(t.status);
         rows += `
           <tr class="hover:bg-slate-700/30 transition">
-            <td class="p-3.5 font-medium text-white">
-              <div>${t.title}</div>
-              ${t.comment ? `<div class="text-xs text-slate-400 italic mt-0.5">💬 \${t.comment}</div>` : ''}
+            <td class="p-3.5 font-medium text-white max-w-xs">
+              <div class="font-semibold text-sm">${t.title}</div>
+              ${t.comment ? `<div class="text-xs text-slate-400 italic mt-1 bg-slate-900/60 p-1.5 rounded border border-slate-700/50">💬 ${t.comment}</div>` : ''}
             </td>
-            <td class="p-3.5"><span class="px-2 py-0.5 text-xs rounded bg-purple-900/50 text-purple-300 border border-purple-700/50 font-medium">${t.group}</span></td>
-            <td class="p-3.5 text-slate-200 font-semibold">${t.assignee}</td>
-            <td class="p-3.5"><span class="px-2 py-0.5 text-xs rounded ${getPriorityStyle(t.priority)}">${t.priority}</span></td>
+            <td class="p-3.5"><span class="px-2.5 py-1 text-xs rounded-md bg-slate-900 text-purple-300 border border-purple-700/50 font-semibold">${t.group}</span></td>
+            <td class="p-3.5 text-slate-200 font-semibold">👤 ${t.assignee}</td>
+            <td class="p-3.5"><span class="px-2.5 py-1 text-xs rounded-md font-semibold ${getPriorityStyle(t.priority)}">${t.priority}</span></td>
             <td class="p-3.5 text-xs text-purple-300 font-medium">${getYearMonth(t.endDate)}</td>
+            <td class="p-3.5">${renderCircularProgress(progress)}</td>
             <td class="p-3.5">
-              <div class="flex items-center gap-2">
-                <div class="w-14 bg-slate-900 h-1.5 rounded-full overflow-hidden border border-slate-700">
-                  <div class="bg-blue-500 h-full" style="width: ${progress}%"></div>
-                </div>
-                <span class="text-xs text-slate-300 font-bold">${progress}%</span>
-              </div>
-            </td>
-            <td class="p-3.5">
-              <select onchange="updateStatus(${t.id}, this.value)" class="bg-slate-900 border border-slate-700 text-xs rounded px-2 py-1 text-slate-200">
-                ${STATUSES.map(s => `<option value="\${s}" ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}
+              <select onchange="updateStatus(${t.id}, this.value)" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 font-medium focus:outline-none focus:border-blue-500">
+                ${STATUSES.map(s => `<option value="${s}" ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}
               </select>
             </td>
             <td class="p-3.5">
               <div class="flex items-center gap-3">
                 <button onclick="editTask(${t.id})" class="text-xs text-blue-400 hover:text-blue-300 font-semibold">Edit</button>
-                <button onclick="deleteTask(${t.id})" class="text-xs text-red-400 hover:text-red-300 font-semibold">Delete</button>
+                <button onclick="promptDeleteTask(${t.id}, '${t.title.replace(/'/g, "\\'")}')" class="text-xs text-red-400 hover:text-red-300 font-semibold">Delete</button>
               </div>
             </td>
           </tr>
@@ -433,8 +527,8 @@
                 <th class="p-3.5">Assignee</th>
                 <th class="p-3.5">Priority</th>
                 <th class="p-3.5">Year-Month</th>
-                <th class="p-3.5">Progress (%)</th>
-                <th class="p-3.5">Status</th>
+                <th class="p-3.5">Progress</th>
+                <th class="p-3.5">Status Column</th>
                 <th class="p-3.5">Actions</th>
               </tr>
             </thead>
@@ -446,9 +540,8 @@
       `;
     }
 
-    // 3. GROUPED VIEW
+    // 2. GROUPED VIEW
     function renderGrouped(container, filtered) {
-      const groups = ['HR', 'Finance', 'IT', 'Marketing', 'Operations', 'Sales', 'Legal'];
       let html = '<div class="space-y-6">';
 
       groups.forEach(g => {
@@ -459,21 +552,27 @@
         groupTasks.forEach(t => {
           const progress = getProgressByStatus(t.status);
           cards += `
-            <div class="bg-slate-900 p-3.5 rounded-lg border border-slate-700/60 flex flex-col justify-between gap-2">
-              <div class="flex justify-between items-start">
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-700/60 flex flex-col justify-between gap-3 shadow-sm">
+              <div class="flex justify-between items-start gap-2">
                 <div class="font-semibold text-sm text-white">${t.title}</div>
-                <button onclick="editTask(${t.id})" class="text-xs text-blue-400 hover:text-blue-300">Edit</button>
+                <button onclick="editTask(${t.id})" class="text-xs text-blue-400 hover:text-blue-300 font-medium">Edit</button>
               </div>
 
-              ${t.comment ? `<p class="text-xs text-slate-400 italic">💬 \${t.comment}</p>` : ''}
+              ${t.comment ? `<p class="text-xs text-slate-400 italic bg-slate-950/60 p-2 rounded border border-slate-800">💬 ${t.comment}</p>` : ''}
               
-              <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-800">
-                <div class="bg-purple-500 h-full" style="width: ${progress}%"></div>
-              </div>
+              <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+                <div class="flex items-center gap-2">
+                  ${renderCircularProgress(progress)}
+                  <div>
+                    <div class="text-[10px] text-slate-400">Status</div>
+                    <div class="text-xs font-bold text-slate-200">${t.status}</div>
+                  </div>
+                </div>
 
-              <div class="flex items-center justify-between text-xs text-slate-400">
-                <span>👤 <strong class="text-slate-200">${t.assignee}</strong></span>
-                <span class="px-2 py-0.5 text-[10px] rounded ${getPriorityStyle(t.priority)}">${t.priority}</span>
+                <div class="text-right">
+                  <div class="text-xs font-semibold text-slate-200">👤 ${t.assignee}</div>
+                  <span class="inline-block mt-1 px-2 py-0.5 text-[10px] rounded font-semibold ${getPriorityStyle(t.priority)}">${t.priority}</span>
+                </div>
               </div>
             </div>
           `;
@@ -485,7 +584,7 @@
               <h3 class="font-bold text-md text-purple-300">📁 ${g} Department</h3>
               <span class="bg-purple-950/80 text-purple-300 border border-purple-700/50 text-xs px-2.5 py-0.5 rounded-full font-bold">${groupTasks.length} Tasks</span>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">${cards}</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${cards}</div>
           </div>
         `;
       });
@@ -494,54 +593,234 @@
       container.innerHTML = html;
     }
 
-    // 4. ANALYTICS VIEW
+    // 3. ANALYTICS VIEW WITH DATA LABELS
+    let chartInstances = {};
+
     function renderAnalytics(container) {
-      const total = tasks.length;
-      const avgProgress = total > 0 ? Math.round(tasks.reduce((sum, t) => sum + getProgressByStatus(t.status), 0) / total) : 0;
-      const assignees = ['Kashyap', 'Melisa', 'Albus', 'Brooke'];
-
-      let assigneeBars = '';
-      assignees.forEach(a => {
-        const aTasks = tasks.filter(t => t.assignee === a);
-        const aAvg = aTasks.length > 0 ? Math.round(aTasks.reduce((sum, t) => sum + getProgressByStatus(t.status), 0) / aTasks.length) : 0;
-
-        assigneeBars += `
-          <div>
-            <div class="flex justify-between text-xs font-semibold mb-1">
-              <span class="text-slate-200">👤 ${a} (${aTasks.length} Tasks)</span>
-              <span class="text-blue-400">${aAvg}% Avg Completion</span>
-            </div>
-            <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-700/60">
-              <div class="bg-blue-500 h-full rounded-full transition-all duration-300" style="width: ${aAvg}%"></div>
-            </div>
-          </div>
-        `;
-      });
-
       container.innerHTML = `
         <div class="space-y-6">
-          <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-xl">
-            <div class="flex justify-between items-center mb-3">
-              <div>
-                <h3 class="text-lg font-bold text-white">Overall Dashboard Completion</h3>
-                <p class="text-xs text-slate-400">Total task progress metric based on status thresholds</p>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Chart 1: Task Duration (Days) -->
+            <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl">
+              <h3 class="text-sm font-bold text-white mb-1">Task Duration (Start to End Date in Days)</h3>
+              <p class="text-xs text-slate-400 mb-4">Calculated span per task</p>
+              <div class="h-72 relative">
+                <canvas id="chartDuration"></canvas>
               </div>
-              <span class="text-3xl font-black text-blue-400">${avgProgress}%</span>
             </div>
-            <div class="w-full bg-slate-900 rounded-full h-4 overflow-hidden border border-slate-700 p-0.5">
-              <div class="bg-gradient-to-r from-blue-500 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: ${avgProgress}%"></div>
+
+            <!-- Chart 2: Average TAT by Assignee -->
+            <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl">
+              <h3 class="text-sm font-bold text-white mb-1">Avg Turn-Around Time (TAT) by Assignee</h3>
+              <p class="text-xs text-slate-400 mb-4">Performance review workload efficiency (Days)</p>
+              <div class="h-72 relative">
+                <canvas id="chartTAT"></canvas>
+              </div>
             </div>
           </div>
 
-          <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-xl">
-            <h3 class="text-md font-bold text-white mb-4">Assignee Workload Breakdown</h3>
-            <div class="space-y-4">${assigneeBars}</div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Chart 3: Status Breakdown -->
+            <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl">
+              <h3 class="text-sm font-bold text-white mb-4">Task Breakdown by Status</h3>
+              <div class="h-64 relative flex justify-center">
+                <canvas id="chartStatus"></canvas>
+              </div>
+            </div>
+
+            <!-- Chart 4: Priority Breakdown -->
+            <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl">
+              <h3 class="text-sm font-bold text-white mb-4">Task Breakdown by Priority</h3>
+              <div class="h-64 relative flex justify-center">
+                <canvas id="chartPriority"></canvas>
+              </div>
+            </div>
           </div>
         </div>
       `;
+
+      setTimeout(buildCharts, 50);
     }
 
-    // UTILITIES & HANDLERS
+    function buildCharts() {
+      // Register DataLabels Plugin
+      Chart.register(ChartDataLabels);
+
+      // Destroy old chart instances to avoid overlap
+      Object.keys(chartInstances).forEach(k => {
+        if (chartInstances[k]) chartInstances[k].destroy();
+      });
+
+      const filtered = getFilteredTasks();
+
+      // CHART 1: Task Durations
+      const durationLabels = filtered.map(t => t.title.length > 18 ? t.title.substring(0, 18) + '...' : t.title);
+      const durationData = filtered.map(t => {
+        if (!t.startDate || !t.endDate) return 1;
+        const d1 = new Date(t.startDate);
+        const d2 = new Date(t.endDate);
+        const diff = Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24));
+        return diff > 0 ? diff : 1;
+      });
+
+      const ctx1 = document.getElementById('chartDuration');
+      if (ctx1) {
+        chartInstances.duration = new Chart(ctx1, {
+          type: 'bar',
+          data: {
+            labels: durationLabels,
+            datasets: [{
+              label: 'Days',
+              data: durationData,
+              backgroundColor: '#3b82f6',
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: { padding: { top: 25 } },
+            scales: {
+              y: { 
+                grace: '25%',
+                ticks: { color: '#94a3b8' }, 
+                grid: { color: '#334155' } 
+              },
+              x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+            },
+            plugins: {
+              legend: { display: false },
+              datalabels: {
+                clip: false,
+                anchor: 'end',
+                align: 'top',
+                color: '#60a5fa',
+                font: { weight: 'bold', size: 11 },
+                formatter: (val) => val + 'd'
+              }
+            }
+          }
+        });
+      }
+
+      // CHART 2: TAT By Assignee
+      const tatMap = {};
+      const countMap = {};
+      assignees.forEach(a => { tatMap[a] = 0; countMap[a] = 0; });
+
+      filtered.forEach(t => {
+        if (t.startDate && t.endDate && tatMap[t.assignee] !== undefined) {
+          const d1 = new Date(t.startDate);
+          const d2 = new Date(t.endDate);
+          const diff = Math.max(1, Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24)));
+          tatMap[t.assignee] += diff;
+          countMap[t.assignee] += 1;
+        }
+      });
+
+      const tatAssignees = assignees.filter(a => countMap[a] > 0);
+      const tatAverages = tatAssignees.map(a => Math.round(tatMap[a] / countMap[a]));
+
+      const ctx2 = document.getElementById('chartTAT');
+      if (ctx2) {
+        chartInstances.tat = new Chart(ctx2, {
+          type: 'bar',
+          data: {
+            labels: tatAssignees,
+            datasets: [{
+              label: 'Avg Days',
+              data: tatAverages,
+              backgroundColor: '#a855f7',
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: { padding: { top: 25 } },
+            scales: {
+              y: { 
+                grace: '25%',
+                ticks: { color: '#94a3b8' }, 
+                grid: { color: '#334155' } 
+              },
+              x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+            },
+            plugins: {
+              legend: { display: false },
+              datalabels: {
+                clip: false,
+                anchor: 'end',
+                align: 'top',
+                color: '#c084fc',
+                font: { weight: 'bold', size: 11 },
+                formatter: (val) => val + 'd avg'
+              }
+            }
+          }
+        });
+      }
+
+      // CHART 3: Status Breakdown
+      const statusCounts = STATUSES.map(s => filtered.filter(t => t.status === s).length);
+      const ctx3 = document.getElementById('chartStatus');
+      if (ctx3) {
+        chartInstances.status = new Chart(ctx3, {
+          type: 'doughnut',
+          data: {
+            labels: STATUSES,
+            datasets: [{
+              data: statusCounts,
+              backgroundColor: ['#64748b', '#3b82f6', '#a855f7', '#10b981'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 11 } } },
+              datalabels: {
+                color: '#ffffff',
+                font: { weight: 'bold', size: 12 },
+                formatter: (val) => val > 0 ? val : ''
+              }
+            }
+          }
+        });
+      }
+
+      // CHART 4: Priority Breakdown
+      const priorities = ['Low', 'Medium', 'High', 'Urgent'];
+      const priorityCounts = priorities.map(p => filtered.filter(t => t.priority === p).length);
+      const ctx4 = document.getElementById('chartPriority');
+      if (ctx4) {
+        chartInstances.priority = new Chart(ctx4, {
+          type: 'pie',
+          data: {
+            labels: priorities,
+            datasets: [{
+              data: priorityCounts,
+              backgroundColor: ['#475569', '#3b82f6', '#f59e0b', '#ef4444'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 11 } } },
+              datalabels: {
+                color: '#ffffff',
+                font: { weight: 'bold', size: 12 },
+                formatter: (val) => val > 0 ? val : ''
+              }
+            }
+          }
+        });
+      }
+    }
+
     function getPriorityStyle(p) {
       if (p === 'Urgent') return 'bg-red-950 text-red-300 border border-red-800/60';
       if (p === 'High') return 'bg-amber-950 text-amber-300 border border-amber-800/60';
@@ -559,17 +838,28 @@
       document.getElementById('charCount').innerText = left + ' left';
     }
 
-    function deleteTask(id) {
-      tasks = tasks.filter(t => t.id !== id);
-      saveData();
+    function promptDeleteTask(id, title) {
+      pendingDeleteId = id;
+      document.getElementById('confirmMsg').innerText = `Are you sure you want to delete "${title}"?`;
+      document.getElementById('confirmDeleteBtn').onclick = () => {
+        tasks = tasks.filter(t => t.id !== pendingDeleteId);
+        saveData();
+        closeConfirmModal();
+      };
+      document.getElementById('confirmModal').classList.add('modal-active');
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirmModal').classList.remove('modal-active');
+      pendingDeleteId = null;
     }
 
     function openModal() {
       document.getElementById('mTaskId').value = '';
       document.getElementById('modalHeading').innerText = 'Create New Task';
       document.getElementById('mTitle').value = '';
-      document.getElementById('mGroup').value = 'HR';
-      document.getElementById('mAssignee').value = 'Kashyap';
+      document.getElementById('mGroup').value = groups[0] || 'HR';
+      document.getElementById('mAssignee').value = assignees[0] || 'Kashyap';
       document.getElementById('mStatus').value = 'Not Started';
       document.getElementById('mPriority').value = 'Medium';
       document.getElementById('mStartDate').value = '';
@@ -601,6 +891,17 @@
       document.getElementById('taskModal').classList.remove('modal-active');
     }
 
+    function openManageOptionsModal(focusType) {
+      renderManageLists();
+      document.getElementById('manageOptionsModal').classList.add('modal-active');
+      if (focusType === 'assignees') document.getElementById('newAssigneeInput').focus();
+      else if (focusType === 'groups') document.getElementById('newGroupInput').focus();
+    }
+
+    function closeManageOptionsModal() {
+      document.getElementById('manageOptionsModal').classList.remove('modal-active');
+    }
+
     function handleSaveTask(e) {
       e.preventDefault();
       const taskId = document.getElementById('mTaskId').value;
@@ -627,7 +928,7 @@
       closeModal();
     }
 
-    // CSV EXPORT (Saves active filter selection to Excel-readable file)
+    // CSV EXPORT
     function exportCSV() {
       const filtered = getFilteredTasks();
       if (filtered.length === 0) {
@@ -664,13 +965,13 @@
         for (let i = 1; i < lines.length; i++) {
           const line = lines[i].trim();
           if (!line) continue;
-          const cols = line.split(',').map(c => c.replace(/^"|"\$/g, '').trim());
+          const cols = line.split(',').map(c => c.replace(/^"|"$/g, '').trim());
           if (cols.length >= 2) {
             tasks.unshift({
               id: Date.now() + i,
               title: cols[0] || 'Imported Task',
-              group: cols[1] || 'HR',
-              assignee: cols[2] || 'Kashyap',
+              group: cols[1] || groups[0] || 'HR',
+              assignee: cols[2] || assignees[0] || 'Kashyap',
               status: cols[3] || 'Not Started',
               priority: cols[4] || 'Medium',
               startDate: cols[7] || '',
@@ -687,8 +988,10 @@
     }
 
     // INITIALIZATION
+    populateDropdownOptions();
     populateYearMonthSlicer();
     renderApp();
   </script>
 </body>
 </html>
+```
