@@ -6,11 +6,9 @@
   <title>Team Task Manager Dashboard</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js & Chart.js DataLabels Plugin -->
+  <!-- Chart.js & DataLabels Plugin -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-  <!-- PapaParse for CSV Support -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
   <style>
     .modal-active { display: flex !important; }
   </style>
@@ -24,20 +22,20 @@
         <h1 class="text-2xl font-bold text-white flex items-center gap-2">
           <span>📋</span> Team Task Manager
         </h1>
-        <p class="text-slate-400 text-sm mt-1">Collaborative task dashboard with Task ID tracking, smart CSV update, & team analytics</p>
+        <p class="text-slate-400 text-sm mt-1">Collaborative dashboard with multi-view tracking & department analytics</p>
       </div>
 
       <!-- Actions -->
       <div class="flex flex-wrap items-center gap-3">
-        <button onclick="openManageOptionsModal()" class="bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-700/60 px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
-          <span>⚙️</span> Manage Assignees & Groups
-        </button>
         <label class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition flex items-center gap-2">
           <span>📥</span> Import CSV
           <input type="file" id="csvFileInput" accept=".csv" onchange="importCSV(event)" class="hidden" />
         </label>
         <button onclick="exportCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
           <span>📤</span> Export Filtered List (Excel)
+        </button>
+        <button onclick="openListsModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
+          <span>⚙️</span> Manage Lists & Slicers
         </button>
         <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 shadow-lg shadow-blue-500/20">
           <span>+</span> New Task
@@ -51,7 +49,7 @@
       <!-- View Switcher -->
       <div class="flex bg-slate-900 p-1 rounded-lg border border-slate-700/60 self-start md:self-auto">
         <button onclick="switchView('table')" id="tab-table" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition bg-blue-600 text-white">
-          Table / Board View
+          Table View
         </button>
         <button onclick="switchView('grouped')" id="tab-grouped" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition text-slate-400 hover:text-slate-200">
           Grouped View
@@ -61,18 +59,19 @@
         </button>
       </div>
 
-      <!-- Slicers -->
+      <!-- Dynamic Slicers Container -->
       <div class="flex flex-wrap items-center gap-3">
+        
         <!-- Assignee Slicer -->
-        <div class="flex items-center gap-1.5">
+        <div id="slicerContainer-assignee" class="flex items-center gap-1.5">
           <span class="text-xs text-slate-400 font-medium">Assignee:</span>
           <select id="filterAssignee" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
-            <!-- Populated dynamically -->
+            <option value="All">All Assignees</option>
           </select>
         </div>
 
         <!-- Year-Month Slicer -->
-        <div class="flex items-center gap-1.5">
+        <div id="slicerContainer-yearMonth" class="flex items-center gap-1.5">
           <span class="text-xs text-slate-400 font-medium">Year-Month:</span>
           <select id="filterYearMonth" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
             <option value="All">All Months</option>
@@ -80,7 +79,7 @@
         </div>
 
         <!-- Status Slicer -->
-        <div class="flex items-center gap-1.5">
+        <div id="slicerContainer-status" class="flex items-center gap-1.5">
           <span class="text-xs text-slate-400 font-medium">Status:</span>
           <select id="filterStatus" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
             <option value="All">All Statuses</option>
@@ -92,15 +91,15 @@
         </div>
 
         <!-- Task Group Slicer -->
-        <div class="flex items-center gap-1.5">
+        <div id="slicerContainer-group" class="flex items-center gap-1.5">
           <span class="text-xs text-slate-400 font-medium">Group:</span>
           <select id="filterGroup" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
-            <!-- Populated dynamically -->
+            <option value="All">All Groups</option>
           </select>
         </div>
 
         <!-- Priority Slicer -->
-        <div class="flex items-center gap-1.5">
+        <div id="slicerContainer-priority" class="flex items-center gap-1.5">
           <span class="text-xs text-slate-400 font-medium">Priority:</span>
           <select id="filterPriority" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
             <option value="All">All Priorities</option>
@@ -110,6 +109,11 @@
             <option value="Urgent">Urgent</option>
           </select>
         </div>
+
+        <!-- Clear Filters Toggle Button -->
+        <button onclick="clearAllFilters()" class="bg-red-900/40 hover:bg-red-800/60 text-red-300 border border-red-700/50 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 ml-1">
+          <span>🧹</span> Clear Filters
+        </button>
       </div>
     </div>
 
@@ -121,9 +125,9 @@
   <div id="taskModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="bg-slate-800 border border-slate-700 w-full max-w-lg rounded-xl p-6 shadow-2xl">
       <div class="flex justify-between items-center mb-5">
-        <div>
+        <div class="flex items-center gap-3">
           <h3 id="modalHeading" class="text-lg font-bold text-white">Create New Task</h3>
-          <span id="mTaskIdDisplay" class="text-xs font-mono font-bold text-purple-400"></span>
+          <span id="mDisplayTaskId" class="text-xs font-mono bg-slate-900 border border-slate-700 px-2 py-0.5 rounded text-blue-400 hidden"></span>
         </div>
         <button onclick="closeModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
       </div>
@@ -139,27 +143,23 @@
         <div class="grid grid-cols-2 gap-4">
           <div>
             <div class="flex justify-between items-center mb-1">
-              <label class="text-xs font-medium text-slate-300">Task Group *</label>
-              <button type="button" onclick="openManageOptionsModal('groups')" class="text-[10px] text-purple-400 hover:underline">+ Add/Edit</button>
+              <label class="block text-xs font-medium text-slate-300">Task Group *</label>
+              <button type="button" onclick="openListsModal()" class="text-[10px] text-blue-400 hover:underline">+ Manage</button>
             </div>
-            <select id="mGroup" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-              <!-- Populated dynamically -->
-            </select>
+            <select id="mGroup" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"></select>
           </div>
           <div>
             <div class="flex justify-between items-center mb-1">
-              <label class="text-xs font-medium text-slate-300">Assignee *</label>
-              <button type="button" onclick="openManageOptionsModal('assignees')" class="text-[10px] text-purple-400 hover:underline">+ Add/Edit</button>
+              <label class="block text-xs font-medium text-slate-300">Assignee *</label>
+              <button type="button" onclick="openListsModal()" class="text-[10px] text-blue-400 hover:underline">+ Manage</button>
             </div>
-            <select id="mAssignee" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-              <!-- Populated dynamically -->
-            </select>
+            <select id="mAssignee" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"></select>
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Status (Auto-sets Progress)</label>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Status (Auto %)</label>
             <select id="mStatus" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
               <option value="Not Started">Not Started (0%)</option>
               <option value="In Progress">In Progress (40%)</option>
@@ -189,7 +189,7 @@
           </div>
         </div>
 
-        <!-- Task Comment (250 chars) -->
+        <!-- Task Comment -->
         <div>
           <div class="flex justify-between items-center mb-1">
             <label class="block text-xs font-medium text-slate-300">Task Comment / Note (Max 250 chars)</label>
@@ -206,98 +206,113 @@
     </div>
   </div>
 
-  <!-- CONFIRMATION DELETE MODAL -->
-  <div id="confirmModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-slate-800 border border-slate-700 w-full max-w-sm rounded-xl p-6 shadow-2xl text-center space-y-4">
-      <div class="text-3xl">⚠️</div>
-      <h3 class="text-lg font-bold text-white">Delete Task?</h3>
-      <p id="confirmMsg" class="text-xs text-slate-300">Are you sure you want to delete this task? This action cannot be undone.</p>
-      <div class="flex justify-center gap-3 pt-2">
-        <button onclick="closeConfirmModal()" class="px-4 py-2 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg">Cancel</button>
-        <button id="confirmDeleteBtn" class="px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-500 text-white rounded-lg shadow-lg">Delete Task</button>
+  <!-- MANAGE LISTS & SLICERS MODAL -->
+  <div id="listsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-800 border border-slate-700 w-full max-w-xl rounded-xl p-6 shadow-2xl space-y-6">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+        <h3 class="text-lg font-bold text-white">⚙️ Manage Custom Lists & Slicers</h3>
+        <button onclick="closeListsModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+
+      <!-- SLICER VISIBILITY TOGGLES SECTION -->
+      <div>
+        <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Toggle Active Header Slicers</h4>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-900 p-3 rounded-lg border border-slate-700">
+          <label class="flex items-center gap-2 text-xs text-slate-200 cursor-pointer">
+            <input type="checkbox" id="chkSlicer-assignee" onchange="toggleSlicerConfig('assignee', this.checked)" class="accent-blue-500" /> Assignee Slicer
+          </label>
+          <label class="flex items-center gap-2 text-xs text-slate-200 cursor-pointer">
+            <input type="checkbox" id="chkSlicer-yearMonth" onchange="toggleSlicerConfig('yearMonth', this.checked)" class="accent-blue-500" /> Year-Month Slicer
+          </label>
+          <label class="flex items-center gap-2 text-xs text-slate-200 cursor-pointer">
+            <input type="checkbox" id="chkSlicer-status" onchange="toggleSlicerConfig('status', this.checked)" class="accent-blue-500" /> Status Slicer
+          </label>
+          <label class="flex items-center gap-2 text-xs text-slate-200 cursor-pointer">
+            <input type="checkbox" id="chkSlicer-group" onchange="toggleSlicerConfig('group', this.checked)" class="accent-blue-500" /> Group Slicer
+          </label>
+          <label class="flex items-center gap-2 text-xs text-slate-200 cursor-pointer">
+            <input type="checkbox" id="chkSlicer-priority" onchange="toggleSlicerConfig('priority', this.checked)" class="accent-blue-500" /> Priority Slicer
+          </label>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Assignees Column -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Manage Assignees</h4>
+          <div class="flex gap-2">
+            <input type="text" id="newAssigneeInput" placeholder="New Assignee" class="flex-1 bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-xs text-white" />
+            <button onclick="addCustomAssignee()" class="bg-blue-600 text-white text-xs px-3 py-1 rounded font-semibold">+ Add</button>
+          </div>
+          <ul id="assigneesList" class="bg-slate-900 rounded-lg p-2 border border-slate-700 space-y-1 max-h-40 overflow-y-auto text-xs"></ul>
+        </div>
+
+        <!-- Task Groups Column -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Manage Task Groups</h4>
+          <div class="flex gap-2">
+            <input type="text" id="newGroupInput" placeholder="New Task Group" class="flex-1 bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-xs text-white" />
+            <button onclick="addCustomGroup()" class="bg-purple-600 text-white text-xs px-3 py-1 rounded font-semibold">+ Add</button>
+          </div>
+          <ul id="groupsList" class="bg-slate-900 rounded-lg p-2 border border-slate-700 space-y-1 max-h-40 overflow-y-auto text-xs"></ul>
+        </div>
+      </div>
+
+      <div class="flex justify-end border-t border-slate-700 pt-3">
+        <button onclick="closeListsModal()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-4 py-2 rounded font-semibold">Close</button>
       </div>
     </div>
   </div>
 
-  <!-- MANAGE ASSIGNEES & GROUPS MODAL -->
-  <div id="manageOptionsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-slate-800 border border-slate-700 w-full max-w-xl rounded-xl p-6 shadow-2xl space-y-6">
-      <div class="flex justify-between items-center border-b border-slate-700 pb-3">
-        <h3 class="text-lg font-bold text-white">Manage Assignees & Task Groups</h3>
-        <button onclick="closeManageOptionsModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Manage Assignees -->
-        <div class="space-y-3">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">👤 Assignees</h4>
-          
-          <div class="flex gap-2">
-            <input type="text" id="newAssigneeInput" placeholder="Add new name..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500" />
-            <button onclick="addCustomAssignee()" class="bg-purple-600 hover:bg-purple-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold">+ Add</button>
-          </div>
-
-          <div id="assigneeListContainer" class="max-h-48 overflow-y-auto space-y-1.5 pr-1 border border-slate-700/60 p-2 rounded-lg bg-slate-900/50">
-            <!-- Rendered via JS -->
-          </div>
-        </div>
-
-        <!-- Manage Groups -->
-        <div class="space-y-3">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">📁 Task Groups</h4>
-          
-          <div class="flex gap-2">
-            <input type="text" id="newGroupInput" placeholder="Add new group..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500" />
-            <button onclick="addCustomGroup()" class="bg-purple-600 hover:bg-purple-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold">+ Add</button>
-          </div>
-
-          <div id="groupListContainer" class="max-h-48 overflow-y-auto space-y-1.5 pr-1 border border-slate-700/60 p-2 rounded-lg bg-slate-900/50">
-            <!-- Rendered via JS -->
-          </div>
-        </div>
-      </div>
-
-      <div class="flex justify-end pt-3 border-t border-slate-700">
-        <button onclick="closeManageOptionsModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg text-xs font-semibold">Done</button>
+  <!-- DELETE CONFIRMATION MODAL -->
+  <div id="deleteModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-800 border border-slate-700 w-full max-w-sm rounded-xl p-6 shadow-2xl text-center space-y-4">
+      <div class="text-3xl">⚠️</div>
+      <h3 class="text-md font-bold text-white">Delete Task Confirmation</h3>
+      <p class="text-xs text-slate-300">Are you sure you want to delete this task? This action cannot be undone.</p>
+      <div class="flex justify-center gap-3 pt-2">
+        <button onclick="closeDeleteModal()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-4 py-2 rounded font-semibold">Cancel</button>
+        <button id="confirmDeleteBtn" class="bg-red-600 hover:bg-red-500 text-white text-xs px-4 py-2 rounded font-semibold">Delete Task</button>
       </div>
     </div>
   </div>
 
   <script>
+    Chart.register(ChartDataLabels);
+
     let currentView = 'table';
-    let pendingDeleteId = null;
+    let pendingDeleteTaskId = null;
 
-    // Default Options
-    let defaultAssignees = ['Kashyap', 'Melisa', 'Albus', 'Brooke'];
-    let defaultGroups = ['HR', 'Finance', 'IT', 'Marketing', 'Operations', 'Sales', 'Legal'];
+    // SLICER VISIBILITY CONFIG
+    let slicerConfig = JSON.parse(localStorage.getItem('team_tasks_slicers_v2')) || {
+      assignee: true,
+      yearMonth: true,
+      status: true,
+      group: true,
+      priority: true
+    };
 
-    let assignees = JSON.parse(localStorage.getItem('team_assignees_v7')) || defaultAssignees;
-    let groups = JSON.parse(localStorage.getItem('team_groups_v7')) || defaultGroups;
+    // DYNAMIC LISTS
+    let customAssignees = JSON.parse(localStorage.getItem('team_tasks_assignees_v2')) || ['Kashyap', 'Melisa', 'Albus', 'Brooke'];
+    let customGroups = JSON.parse(localStorage.getItem('team_tasks_groups_v2')) || ['HR', 'Finance', 'IT', 'Marketing', 'Operations', 'Sales', 'Legal'];
 
-    // Helper for Automatic Status Progress
-    function getProgressByStatus(status) {
-      if (status === 'Completed') return 100;
-      if (status === 'Under Review') return 75;
-      if (status === 'In Progress') return 40;
-      return 0; // 'Not Started'
-    }
-
+    // TASK DATA WITH TASK ID SYSTEM
     let defaultData = [
-      { taskId: 'TASK-1001', title: 'Annual Financial Audit', group: 'Finance', assignee: 'Kashyap', status: 'In Progress', priority: 'High', startDate: '2026-10-01', endDate: '2026-10-15', comment: 'Audit team requested additional ledger statements.' },
-      { taskId: 'TASK-1002', title: 'Onboard Senior Engineers', group: 'HR', assignee: 'Melisa', status: 'Not Started', priority: 'Medium', startDate: '2026-10-10', endDate: '2026-10-25', comment: 'Waiting for IT to assign work laptops.' },
-      { taskId: 'TASK-1003', title: 'Server OS Security Patch', group: 'IT', assignee: 'Albus', status: 'Under Review', priority: 'Urgent', startDate: '2026-10-05', endDate: '2026-10-09', comment: 'Patches deployed to staging environment.' },
-      { taskId: 'TASK-1004', title: 'Q4 Marketing Strategy', group: 'Marketing', assignee: 'Brooke', status: 'Completed', priority: 'High', startDate: '2026-09-15', endDate: '2026-10-01', comment: 'Approved by leadership team.' }
+      { id: 101, title: 'Annual Financial Audit', group: 'Finance', assignee: 'Kashyap', status: 'In Progress', priority: 'High', startDate: '2026-10-01', endDate: '2026-10-15', comment: 'Audit team requested additional ledger statements.' },
+      { id: 102, title: 'Onboard Senior Engineers', group: 'HR', assignee: 'Melisa', status: 'Not Started', priority: 'Medium', startDate: '2026-10-10', endDate: '2026-10-25', comment: 'Waiting for IT to assign work laptops.' },
+      { id: 103, title: 'Server OS Security Patch', group: 'IT', assignee: 'Albus', status: 'Under Review', priority: 'Urgent', startDate: '2026-10-05', endDate: '2026-10-09', comment: 'Patches deployed to staging environment.' },
+      { id: 104, title: 'Q4 Marketing Strategy', group: 'Marketing', assignee: 'Brooke', status: 'Completed', priority: 'High', startDate: '2026-09-15', endDate: '2026-10-01', comment: 'Approved by leadership team.' }
     ];
 
     let tasks = [];
     try {
-      let saved = JSON.parse(localStorage.getItem('team_tasks_v7'));
+      let saved = JSON.parse(localStorage.getItem('team_tasks_v6'));
       if (Array.isArray(saved) && saved.length > 0) {
         tasks = saved.map((t, idx) => ({
-          taskId: t.taskId || `TASK-${1001 + idx}`,
+          id: t.id || (101 + idx),
           title: t.title || 'Untitled Task',
-          group: t.group || groups[0] || 'HR',
-          assignee: t.assignee || assignees[0] || 'Kashyap',
+          group: t.group || 'HR',
+          assignee: t.assignee || 'Kashyap',
           status: t.status || 'Not Started',
           priority: t.priority || 'Medium',
           startDate: t.startDate || '',
@@ -313,112 +328,59 @@
 
     const STATUSES = ['Not Started', 'In Progress', 'Under Review', 'Completed'];
 
-    // TASK ID GENERATOR
-    function generateNextTaskId() {
-      let maxNum = 1000;
-      tasks.forEach(t => {
-        if (t.taskId && t.taskId.startsWith('TASK-')) {
-          const num = parseInt(t.taskId.replace('TASK-', ''), 10);
-          if (!isNaN(num) && num > maxNum) maxNum = num;
-        }
-      });
-      return `TASK-${maxNum + 1}`;
-    }
-
-    function saveAssigneesAndGroups() {
-      localStorage.setItem('team_assignees_v7', JSON.stringify(assignees));
-      localStorage.setItem('team_groups_v7', JSON.stringify(groups));
-      populateDropdownOptions();
-      renderApp();
-    }
-
-    function addCustomAssignee() {
-      const input = document.getElementById('newAssigneeInput');
-      const val = input.value.trim();
-      if (!val) return;
-      if (!assignees.includes(val)) {
-        assignees.push(val);
-        saveAssigneesAndGroups();
-        renderManageLists();
-      }
-      input.value = '';
-    }
-
-    function deleteCustomAssignee(name) {
-      if (assignees.length <= 1) {
-        alert("At least one assignee must remain.");
-        return;
-      }
-      assignees = assignees.filter(a => a !== name);
-      saveAssigneesAndGroups();
-      renderManageLists();
-    }
-
-    function addCustomGroup() {
-      const input = document.getElementById('newGroupInput');
-      const val = input.value.trim();
-      if (!val) return;
-      if (!groups.includes(val)) {
-        groups.push(val);
-        saveAssigneesAndGroups();
-        renderManageLists();
-      }
-      input.value = '';
-    }
-
-    function deleteCustomGroup(name) {
-      if (groups.length <= 1) {
-        alert("At least one task group must remain.");
-        return;
-      }
-      groups = groups.filter(g => g !== name);
-      saveAssigneesAndGroups();
-      renderManageLists();
-    }
-
-    function renderManageLists() {
-      const aContainer = document.getElementById('assigneeListContainer');
-      const gContainer = document.getElementById('groupListContainer');
-
-      aContainer.innerHTML = assignees.map(a => `
-        <div class="flex justify-between items-center text-xs bg-slate-800 px-2.5 py-1.5 rounded border border-slate-700">
-          <span class="font-semibold text-slate-200">👤 ${a}</span>
-          <button onclick="deleteCustomAssignee('${a}')" class="text-red-400 hover:text-red-300 font-bold">✕</button>
-        </div>
-      `).join('');
-
-      gContainer.innerHTML = groups.map(g => `
-        <div class="flex justify-between items-center text-xs bg-slate-800 px-2.5 py-1.5 rounded border border-slate-700">
-          <span class="font-semibold text-purple-300">📁 ${g}</span>
-          <button onclick="deleteCustomGroup('${g}')" class="text-red-400 hover:text-red-300 font-bold">✕</button>
-        </div>
-      `).join('');
-    }
-
-    function populateDropdownOptions() {
-      // 1. Assignee Filter Dropdown
-      const fAssignee = document.getElementById('filterAssignee');
-      const curFA = fAssignee.value || 'All';
-      fAssignee.innerHTML = '<option value="All">All Assignees</option>' + assignees.map(a => `<option value="${a}">${a}</option>`).join('');
-      fAssignee.value = assignees.includes(curFA) ? curFA : 'All';
-
-      // 2. Group Filter Dropdown
-      const fGroup = document.getElementById('filterGroup');
-      const curFG = fGroup.value || 'All';
-      fGroup.innerHTML = '<option value="All">All Groups</option>' + groups.map(g => `<option value="${g}">${g}</option>`).join('');
-      fGroup.value = groups.includes(curFG) ? curFG : 'All';
-
-      // 3. Modal Form Dropdowns
-      const mAssignee = document.getElementById('mAssignee');
-      mAssignee.innerHTML = assignees.map(a => `<option value="${a}">${a}</option>`).join('');
-
-      const mGroup = document.getElementById('mGroup');
-      mGroup.innerHTML = groups.map(g => `<option value="${g}">${g}</option>`).join('');
+    function getProgressByStatus(status) {
+      if (status === 'Completed') return 100;
+      if (status === 'Under Review') return 75;
+      if (status === 'In Progress') return 40;
+      return 0;
     }
 
     function getYearMonth(endDateStr) {
       if (!endDateStr) return 'Unscheduled';
       return endDateStr.substring(0, 7);
+    }
+
+    function applySlicerConfig() {
+      Object.keys(slicerConfig).forEach(key => {
+        const el = document.getElementById(`slicerContainer-${key}`);
+        const chk = document.getElementById(`chkSlicer-${key}`);
+        if (el) el.style.display = slicerConfig[key] ? 'flex' : 'none';
+        if (chk) chk.checked = slicerConfig[key];
+      });
+    }
+
+    function toggleSlicerConfig(key, isChecked) {
+      slicerConfig[key] = isChecked;
+      localStorage.setItem('team_tasks_slicers_v2', JSON.stringify(slicerConfig));
+      applySlicerConfig();
+      renderApp();
+    }
+
+    function clearAllFilters() {
+      document.getElementById('filterAssignee').value = 'All';
+      document.getElementById('filterYearMonth').value = 'All';
+      document.getElementById('filterStatus').value = 'All';
+      document.getElementById('filterGroup').value = 'All';
+      document.getElementById('filterPriority').value = 'All';
+      renderApp();
+    }
+
+    function populateDropdowns() {
+      const aSelect = document.getElementById('filterAssignee');
+      const curA = aSelect.value;
+      aSelect.innerHTML = '<option value="All">All Assignees</option>' + customAssignees.map(a => `<option value="${a}">${a}</option>`).join('');
+      aSelect.value = curA;
+
+      const mASelect = document.getElementById('mAssignee');
+      mASelect.innerHTML = customAssignees.map(a => `<option value="${a}">${a}</option>`).join('');
+
+      const gSelect = document.getElementById('filterGroup');
+      const curG = gSelect.value;
+      gSelect.innerHTML = '<option value="All">All Groups</option>' + customGroups.map(g => `<option value="${g}">${g}</option>`).join('');
+      gSelect.value = curG;
+
+      const mGSelect = document.getElementById('mGroup');
+      mGSelect.innerHTML = customGroups.map(g => `<option value="${g}">${g}</option>`).join('');
     }
 
     function populateYearMonthSlicer() {
@@ -427,9 +389,7 @@
       select.innerHTML = '<option value="All">All Months</option>';
 
       const ymSet = new Set();
-      tasks.forEach(t => {
-        if (t.endDate) ymSet.add(getYearMonth(t.endDate));
-      });
+      tasks.forEach(t => { if (t.endDate) ymSet.add(getYearMonth(t.endDate)); });
 
       Array.from(ymSet).sort().reverse().forEach(ym => {
         select.innerHTML += `<option value="${ym}">${ym}</option>`;
@@ -439,7 +399,7 @@
     }
 
     function saveData() {
-      localStorage.setItem('team_tasks_v7', JSON.stringify(tasks));
+      localStorage.setItem('team_tasks_v6', JSON.stringify(tasks));
       populateYearMonthSlicer();
       renderApp();
     }
@@ -479,54 +439,55 @@
       else if (currentView === 'analytics') renderAnalytics(container);
     }
 
-    // CIRCULAR PROGRESS SVG RENDERER
-    function renderCircularProgress(percent) {
+    // CIRCULAR SVG PROGRESS RING HELPER
+    function getCircularProgressRing(percent) {
       const radius = 16;
       const circumference = 2 * Math.PI * radius;
-      const offset = circumference - (percent / 100) * circumference;
-
-      let colorClass = 'text-blue-500';
-      if (percent === 100) colorClass = 'text-emerald-400';
-      else if (percent === 75) colorClass = 'text-purple-400';
-      else if (percent === 40) colorClass = 'text-amber-400';
+      const strokeDashoffset = circumference - (percent / 100) * circumference;
+      
+      let colorClass = "text-blue-500";
+      if (percent === 100) colorClass = "text-emerald-400";
+      else if (percent >= 75) colorClass = "text-purple-400";
 
       return `
-        <div class="relative inline-flex items-center justify-center w-11 h-11">
-          <svg class="w-11 h-11 transform -rotate-90">
-            <circle cx="22" cy="22" r="${radius}" stroke-width="3.5" class="text-slate-800" stroke="currentColor" fill="transparent" />
-            <circle cx="22" cy="22" r="${radius}" stroke-width="3.5" class="${colorClass} transition-all duration-500" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round" stroke="currentColor" fill="transparent" />
+        <div class="relative flex items-center justify-center w-10 h-10">
+          <svg class="w-10 h-10 transform -rotate-90">
+            <circle cx="20" cy="20" r="${radius}" stroke="currentColor" stroke-width="3" fill="transparent" class="text-slate-800" />
+            <circle cx="20" cy="20" r="${radius}" stroke="currentColor" stroke-width="3" fill="transparent" 
+                    stroke-dasharray="${circumference}" stroke-dashoffset="${strokeDashoffset}" 
+                    stroke-linecap="round" class="${colorClass} transition-all duration-500" />
           </svg>
-          <span class="absolute text-[10px] font-extrabold text-white">${percent}%</span>
+          <span class="absolute text-[10px] font-bold text-slate-200">${percent}%</span>
         </div>
       `;
     }
 
-    // 1. TABLE / BOARD INTEGRATED VIEW
+    // 1. TABLE VIEW
     function renderTable(container, filtered) {
       let rows = '';
       filtered.forEach(t => {
         const progress = getProgressByStatus(t.status);
         rows += `
           <tr class="hover:bg-slate-700/30 transition">
-            <td class="p-3.5 font-mono text-xs font-bold text-purple-400">${t.taskId}</td>
-            <td class="p-3.5 font-medium text-white max-w-xs">
-              <div class="font-semibold text-sm">${t.title}</div>
-              ${t.comment ? `<div class="text-xs text-slate-400 italic mt-1 bg-slate-900/60 p-1.5 rounded border border-slate-700/50">💬 ${t.comment}</div>` : ''}
+            <td class="p-3.5 font-mono text-xs text-blue-400 font-bold">#${t.id}</td>
+            <td class="p-3.5 font-medium text-white">
+              <div>${t.title}</div>
+              ${t.comment ? `<div class="text-xs text-slate-400 italic mt-0.5">💬 \${t.comment}</div>` : ''}
             </td>
-            <td class="p-3.5"><span class="px-2.5 py-1 text-xs rounded-md bg-slate-900 text-purple-300 border border-purple-700/50 font-semibold">${t.group}</span></td>
-            <td class="p-3.5 text-slate-200 font-semibold">👤 ${t.assignee}</td>
-            <td class="p-3.5"><span class="px-2.5 py-1 text-xs rounded-md font-semibold ${getPriorityStyle(t.priority)}">${t.priority}</span></td>
+            <td class="p-3.5"><span class="px-2 py-0.5 text-xs rounded bg-purple-900/50 text-purple-300 border border-purple-700/50 font-medium">${t.group}</span></td>
+            <td class="p-3.5 text-slate-200 font-semibold">${t.assignee}</td>
+            <td class="p-3.5"><span class="px-2 py-0.5 text-xs rounded ${getPriorityStyle(t.priority)}">${t.priority}</span></td>
             <td class="p-3.5 text-xs text-purple-300 font-medium">${getYearMonth(t.endDate)}</td>
-            <td class="p-3.5">${renderCircularProgress(progress)}</td>
+            <td class="p-3.5">${getCircularProgressRing(progress)}</td>
             <td class="p-3.5">
-              <select onchange="updateStatus('${t.taskId}', this.value)" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 font-medium focus:outline-none focus:border-blue-500">
-                ${STATUSES.map(s => `<option value="${s}" ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}
+              <select onchange="updateStatus(${t.id}, this.value)" class="bg-slate-900 border border-slate-700 text-xs rounded px-2 py-1 text-slate-200">
+                ${STATUSES.map(s => `<option value="\${s}" ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}
               </select>
             </td>
             <td class="p-3.5">
               <div class="flex items-center gap-3">
-                <button onclick="editTask('${t.taskId}')" class="text-xs text-blue-400 hover:text-blue-300 font-semibold">Edit</button>
-                <button onclick="promptDeleteTask('${t.taskId}', '${t.title.replace(/'/g, "\\'")}')" class="text-xs text-red-400 hover:text-red-300 font-semibold">Delete</button>
+                <button onclick="editTask(${t.id})" class="text-xs text-blue-400 hover:text-blue-300 font-semibold">Edit</button>
+                <button onclick="promptDeleteTask(${t.id})" class="text-xs text-red-400 hover:text-red-300 font-semibold">Delete</button>
               </div>
             </td>
           </tr>
@@ -545,7 +506,7 @@
                 <th class="p-3.5">Priority</th>
                 <th class="p-3.5">Year-Month</th>
                 <th class="p-3.5">Progress</th>
-                <th class="p-3.5">Status Column</th>
+                <th class="p-3.5">Status</th>
                 <th class="p-3.5">Actions</th>
               </tr>
             </thead>
@@ -561,7 +522,7 @@
     function renderGrouped(container, filtered) {
       let html = '<div class="space-y-6">';
 
-      groups.forEach(g => {
+      customGroups.forEach(g => {
         const groupTasks = filtered.filter(t => t.group === g);
         if (groupTasks.length === 0) return;
 
@@ -569,30 +530,26 @@
         groupTasks.forEach(t => {
           const progress = getProgressByStatus(t.status);
           cards += `
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-700/60 flex flex-col justify-between gap-3 shadow-sm">
+            <div class="bg-slate-900 p-3.5 rounded-lg border border-slate-700/60 flex flex-col justify-between gap-3">
               <div class="flex justify-between items-start gap-2">
                 <div>
-                  <span class="text-[10px] font-mono font-bold text-purple-400">${t.taskId}</span>
+                  <span class="text-[10px] font-mono text-blue-400 font-bold block mb-0.5">#${t.id}</span>
                   <div class="font-semibold text-sm text-white">${t.title}</div>
                 </div>
-                <button onclick="editTask('${t.taskId}')" class="text-xs text-blue-400 hover:text-blue-300 font-medium">Edit</button>
+                <button onclick="editTask(${t.id})" class="text-xs text-blue-400 hover:text-blue-300 font-semibold">Edit</button>
               </div>
 
-              ${t.comment ? `<p class="text-xs text-slate-400 italic bg-slate-950/60 p-2 rounded border border-slate-800">💬 ${t.comment}</p>` : ''}
+              ${t.comment ? `<p class="text-xs text-slate-400 italic">💬 \${t.comment}</p>` : ''}
               
-              <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+              <div class="flex items-center justify-between pt-1 border-t border-slate-800">
                 <div class="flex items-center gap-2">
-                  ${renderCircularProgress(progress)}
-                  <div>
-                    <div class="text-[10px] text-slate-400">Status</div>
-                    <div class="text-xs font-bold text-slate-200">${t.status}</div>
+                  ${getCircularProgressRing(progress)}
+                  <div class="text-xs">
+                    <span class="text-slate-400 block text-[10px]">Assignee</span>
+                    <strong class="text-slate-200">${t.assignee}</strong>
                   </div>
                 </div>
-
-                <div class="text-right">
-                  <div class="text-xs font-semibold text-slate-200">👤 ${t.assignee}</div>
-                  <span class="inline-block mt-1 px-2 py-0.5 text-[10px] rounded font-semibold ${getPriorityStyle(t.priority)}">${t.priority}</span>
-                </div>
+                <span class="px-2 py-0.5 text-[10px] rounded ${getPriorityStyle(t.priority)}">${t.priority}</span>
               </div>
             </div>
           `;
@@ -604,7 +561,7 @@
               <h3 class="font-bold text-md text-purple-300">📁 ${g} Department</h3>
               <span class="bg-purple-950/80 text-purple-300 border border-purple-700/50 text-xs px-2.5 py-0.5 rounded-full font-bold">${groupTasks.length} Tasks</span>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${cards}</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">${cards}</div>
           </div>
         `;
       });
@@ -613,234 +570,104 @@
       container.innerHTML = html;
     }
 
-    // 3. ANALYTICS VIEW WITH DATA LABELS
-    let chartInstances = {};
-
+    // 3. ANALYTICS VIEW WITH CHART DATA LABELS
     function renderAnalytics(container) {
+      const total = tasks.length;
+      const avgProgress = total > 0 ? Math.round(tasks.reduce((sum, t) => sum + getProgressByStatus(t.status), 0) / total) : 0;
+
       container.innerHTML = `
         <div class="space-y-6">
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Chart 1: Task Duration (Days) -->
-            <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl">
-              <h3 class="text-sm font-bold text-white mb-1">Task Duration by Task ID (Days)</h3>
-              <p class="text-xs text-slate-400 mb-4">Calculated span per Task ID</p>
-              <div class="h-72 relative">
-                <canvas id="chartDuration"></canvas>
+          <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-xl">
+            <div class="flex justify-between items-center mb-3">
+              <div>
+                <h3 class="text-lg font-bold text-white">Overall Dashboard Completion</h3>
+                <p class="text-xs text-slate-400">Weighted average based on status thresholds</p>
               </div>
+              <span class="text-3xl font-black text-blue-400">${avgProgress}%</span>
             </div>
-
-            <!-- Chart 2: Average TAT by Assignee -->
-            <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl">
-              <h3 class="text-sm font-bold text-white mb-1">Avg Turn-Around Time (TAT) by Assignee</h3>
-              <p class="text-xs text-slate-400 mb-4">Performance review workload efficiency (Days)</p>
-              <div class="h-72 relative">
-                <canvas id="chartTAT"></canvas>
-              </div>
+            <div class="w-full bg-slate-900 rounded-full h-4 overflow-hidden border border-slate-700 p-0.5">
+              <div class="bg-gradient-to-r from-blue-500 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: ${avgProgress}%"></div>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Chart 3: Status Breakdown -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl">
-              <h3 class="text-sm font-bold text-white mb-4">Task Breakdown by Status</h3>
-              <div class="h-64 relative flex justify-center">
-                <canvas id="chartStatus"></canvas>
-              </div>
+              <h4 class="text-xs font-bold text-slate-300 uppercase mb-4">Task Duration (Start to End Date)</h4>
+              <div class="relative h-72"><canvas id="durationChart"></canvas></div>
             </div>
 
-            <!-- Chart 4: Priority Breakdown -->
             <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl">
-              <h3 class="text-sm font-bold text-white mb-4">Task Breakdown by Priority</h3>
-              <div class="h-64 relative flex justify-center">
-                <canvas id="chartPriority"></canvas>
-              </div>
+              <h4 class="text-xs font-bold text-slate-300 uppercase mb-4">Average Turn-Around Time (TAT) by Assignee</h4>
+              <div class="relative h-72"><canvas id="tatChart"></canvas></div>
             </div>
           </div>
         </div>
       `;
 
-      setTimeout(buildCharts, 50);
-    }
+      setTimeout(() => {
+        // Duration Chart
+        const durationTasks = tasks.filter(t => t.startDate && t.endDate).slice(0, 8);
+        const durationLabels = durationTasks.map(t => `#${t.id} ${t.title.substring(0, 15)}...`);
+        const durationData = durationTasks.map(t => {
+          const diff = new Date(t.endDate) - new Date(t.startDate);
+          return Math.max(1, Math.round(diff / (1000 * 60 * 60 * 24)));
+        });
 
-    function buildCharts() {
-      // Register DataLabels Plugin
-      Chart.register(ChartDataLabels);
-
-      // Destroy old chart instances to avoid overlap
-      Object.keys(chartInstances).forEach(k => {
-        if (chartInstances[k]) chartInstances[k].destroy();
-      });
-
-      const filtered = getFilteredTasks();
-
-      // CHART 1: Task Durations by Task ID
-      const durationLabels = filtered.map(t => `${t.taskId}: ${t.title.length > 12 ? t.title.substring(0, 12) + '...' : t.title}`);
-      const durationData = filtered.map(t => {
-        if (!t.startDate || !t.endDate) return 1;
-        const d1 = new Date(t.startDate);
-        const d2 = new Date(t.endDate);
-        const diff = Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24));
-        return diff > 0 ? diff : 1;
-      });
-
-      const ctx1 = document.getElementById('chartDuration');
-      if (ctx1) {
-        chartInstances.duration = new Chart(ctx1, {
+        new Chart(document.getElementById('durationChart'), {
           type: 'bar',
           data: {
             labels: durationLabels,
-            datasets: [{
-              label: 'Days',
-              data: durationData,
-              backgroundColor: '#3b82f6',
-              borderRadius: 6
-            }]
+            datasets: [{ label: 'Days', data: durationData, backgroundColor: '#3b82f6', borderRadius: 6 }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
             layout: { padding: { top: 25 } },
-            scales: {
-              y: { 
-                grace: '25%',
-                ticks: { color: '#94a3b8' }, 
-                grid: { color: '#334155' } 
-              },
-              x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
-            },
+            clip: false,
             plugins: {
-              legend: { display: false },
-              datalabels: {
-                clip: false,
-                anchor: 'end',
-                align: 'top',
-                color: '#60a5fa',
-                font: { weight: 'bold', size: 11 },
-                formatter: (val) => val + 'd'
-              }
+              datalabels: { anchor: 'end', align: 'top', color: '#60a5fa', font: { weight: 'bold', size: 11 }, formatter: v => v + 'd' },
+              legend: { display: false }
+            },
+            scales: {
+              y: { grace: '25%', grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+              x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
             }
           }
         });
-      }
 
-      // CHART 2: TAT By Assignee
-      const tatMap = {};
-      const countMap = {};
-      assignees.forEach(a => { tatMap[a] = 0; countMap[a] = 0; });
+        // TAT Chart
+        const tatData = customAssignees.map(a => {
+          const aTasks = tasks.filter(t => t.assignee === a && t.startDate && t.endDate);
+          if (aTasks.length === 0) return 0;
+          const totalDays = aTasks.reduce((sum, t) => sum + Math.max(1, Math.round((new Date(t.endDate) - new Date(t.startDate)) / (1000 * 60 * 60 * 24))), 0);
+          return Math.round(totalDays / aTasks.length);
+        });
 
-      filtered.forEach(t => {
-        if (t.startDate && t.endDate && tatMap[t.assignee] !== undefined) {
-          const d1 = new Date(t.startDate);
-          const d2 = new Date(t.endDate);
-          const diff = Math.max(1, Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24)));
-          tatMap[t.assignee] += diff;
-          countMap[t.assignee] += 1;
-        }
-      });
-
-      const tatAssignees = assignees.filter(a => countMap[a] > 0);
-      const tatAverages = tatAssignees.map(a => Math.round(tatMap[a] / countMap[a]));
-
-      const ctx2 = document.getElementById('chartTAT');
-      if (ctx2) {
-        chartInstances.tat = new Chart(ctx2, {
+        new Chart(document.getElementById('tatChart'), {
           type: 'bar',
           data: {
-            labels: tatAssignees,
-            datasets: [{
-              label: 'Avg Days',
-              data: tatAverages,
-              backgroundColor: '#a855f7',
-              borderRadius: 6
-            }]
+            labels: customAssignees,
+            datasets: [{ label: 'Avg Days', data: tatData, backgroundColor: '#a855f7', borderRadius: 6 }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
             layout: { padding: { top: 25 } },
-            scales: {
-              y: { 
-                grace: '25%',
-                ticks: { color: '#94a3b8' }, 
-                grid: { color: '#334155' } 
-              },
-              x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+            clip: false,
+            plugins: {
+              datalabels: { anchor: 'end', align: 'top', color: '#c084fc', font: { weight: 'bold', size: 11 }, formatter: v => v + 'd' },
+              legend: { display: false }
             },
-            plugins: {
-              legend: { display: false },
-              datalabels: {
-                clip: false,
-                anchor: 'end',
-                align: 'top',
-                color: '#c084fc',
-                font: { weight: 'bold', size: 11 },
-                formatter: (val) => val + 'd avg'
-              }
+            scales: {
+              y: { grace: '25%', grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+              x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
             }
           }
         });
-      }
-
-      // CHART 3: Status Breakdown
-      const statusCounts = STATUSES.map(s => filtered.filter(t => t.status === s).length);
-      const ctx3 = document.getElementById('chartStatus');
-      if (ctx3) {
-        chartInstances.status = new Chart(ctx3, {
-          type: 'doughnut',
-          data: {
-            labels: STATUSES,
-            datasets: [{
-              data: statusCounts,
-              backgroundColor: ['#64748b', '#3b82f6', '#a855f7', '#10b981'],
-              borderWidth: 0
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 11 } } },
-              datalabels: {
-                color: '#ffffff',
-                font: { weight: 'bold', size: 12 },
-                formatter: (val) => val > 0 ? val : ''
-              }
-            }
-          }
-        });
-      }
-
-      // CHART 4: Priority Breakdown
-      const priorities = ['Low', 'Medium', 'High', 'Urgent'];
-      const priorityCounts = priorities.map(p => filtered.filter(t => t.priority === p).length);
-      const ctx4 = document.getElementById('chartPriority');
-      if (ctx4) {
-        chartInstances.priority = new Chart(ctx4, {
-          type: 'pie',
-          data: {
-            labels: priorities,
-            datasets: [{
-              data: priorityCounts,
-              backgroundColor: ['#475569', '#3b82f6', '#f59e0b', '#ef4444'],
-              borderWidth: 0
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 11 } } },
-              datalabels: {
-                color: '#ffffff',
-                font: { weight: 'bold', size: 12 },
-                formatter: (val) => val > 0 ? val : ''
-              }
-            }
-          }
-        });
-      }
+      }, 50);
     }
 
+    // UTILITIES & MODAL HANDLERS
     function getPriorityStyle(p) {
       if (p === 'Urgent') return 'bg-red-950 text-red-300 border border-red-800/60';
       if (p === 'High') return 'bg-amber-950 text-amber-300 border border-amber-800/60';
@@ -848,8 +675,8 @@
       return 'bg-slate-700 text-slate-300';
     }
 
-    function updateStatus(taskId, newStatus) {
-      tasks = tasks.map(t => t.taskId === taskId ? { ...t, status: newStatus } : t);
+    function updateStatus(id, newStatus) {
+      tasks = tasks.map(t => t.id === id ? { ...t, status: newStatus } : t);
       saveData();
     }
 
@@ -858,29 +685,28 @@
       document.getElementById('charCount').innerText = left + ' left';
     }
 
-    function promptDeleteTask(taskId, title) {
-      pendingDeleteId = taskId;
-      document.getElementById('confirmMsg').innerText = `Are you sure you want to delete task ${taskId} ("${title}")?`;
-      document.getElementById('confirmDeleteBtn').onclick = () => {
-        tasks = tasks.filter(t => t.taskId !== pendingDeleteId);
+    function promptDeleteTask(id) {
+      pendingDeleteTaskId = id;
+      document.getElementById('confirmDeleteBtn').onclick = function() {
+        tasks = tasks.filter(t => t.id !== pendingDeleteTaskId);
         saveData();
-        closeConfirmModal();
+        closeDeleteModal();
       };
-      document.getElementById('confirmModal').classList.add('modal-active');
+      document.getElementById('deleteModal').classList.add('modal-active');
     }
 
-    function closeConfirmModal() {
-      document.getElementById('confirmModal').classList.remove('modal-active');
-      pendingDeleteId = null;
+    function closeDeleteModal() {
+      pendingDeleteTaskId = null;
+      document.getElementById('deleteModal').classList.remove('modal-active');
     }
 
     function openModal() {
       document.getElementById('mTaskId').value = '';
-      document.getElementById('mTaskIdDisplay').innerText = `ID: ${generateNextTaskId()} (Auto)`;
+      document.getElementById('mDisplayTaskId').classList.add('hidden');
       document.getElementById('modalHeading').innerText = 'Create New Task';
       document.getElementById('mTitle').value = '';
-      document.getElementById('mGroup').value = groups[0] || 'HR';
-      document.getElementById('mAssignee').value = assignees[0] || 'Kashyap';
+      document.getElementById('mGroup').value = customGroups[0] || 'HR';
+      document.getElementById('mAssignee').value = customAssignees[0] || 'Kashyap';
       document.getElementById('mStatus').value = 'Not Started';
       document.getElementById('mPriority').value = 'Medium';
       document.getElementById('mStartDate').value = '';
@@ -890,12 +716,13 @@
       document.getElementById('taskModal').classList.add('modal-active');
     }
 
-    function editTask(taskId) {
-      const t = tasks.find(x => x.taskId === taskId);
+    function editTask(id) {
+      const t = tasks.find(x => x.id === id);
       if (!t) return;
 
-      document.getElementById('mTaskId').value = t.taskId;
-      document.getElementById('mTaskIdDisplay').innerText = `ID: ${t.taskId}`;
+      document.getElementById('mTaskId').value = t.id;
+      document.getElementById('mDisplayTaskId').innerText = '#' + t.id;
+      document.getElementById('mDisplayTaskId').classList.remove('hidden');
       document.getElementById('modalHeading').innerText = 'Edit Task';
       document.getElementById('mTitle').value = t.title;
       document.getElementById('mGroup').value = t.group;
@@ -913,17 +740,6 @@
       document.getElementById('taskModal').classList.remove('modal-active');
     }
 
-    function openManageOptionsModal(focusType) {
-      renderManageLists();
-      document.getElementById('manageOptionsModal').classList.add('modal-active');
-      if (focusType === 'assignees') document.getElementById('newAssigneeInput').focus();
-      else if (focusType === 'groups') document.getElementById('newGroupInput').focus();
-    }
-
-    function closeManageOptionsModal() {
-      document.getElementById('manageOptionsModal').classList.remove('modal-active');
-    }
-
     function handleSaveTask(e) {
       e.preventDefault();
       const taskId = document.getElementById('mTaskId').value;
@@ -937,13 +753,13 @@
       const comment = document.getElementById('mComment').value;
 
       if (taskId) {
-        tasks = tasks.map(t => t.taskId === taskId ? {
+        tasks = tasks.map(t => t.id == taskId ? {
           ...t, title, group, assignee, status, priority, startDate, endDate, comment
         } : t);
       } else {
-        const newId = generateNextTaskId();
+        const nextId = tasks.length > 0 ? Math.max(...tasks.map(t => t.id || 0)) + 1 : 101;
         tasks.unshift({
-          taskId: newId, title, group, assignee, status, priority, startDate, endDate, comment
+          id: nextId, title, group, assignee, status, priority, startDate, endDate, comment
         });
       }
 
@@ -951,7 +767,79 @@
       closeModal();
     }
 
-    // CSV EXPORT (Includes Task ID)
+    // MANAGE LISTS MODAL HANDLERS
+    function openListsModal() {
+      renderListsManager();
+      document.getElementById('listsModal').classList.add('modal-active');
+    }
+
+    function closeListsModal() {
+      document.getElementById('listsModal').classList.remove('modal-active');
+    }
+
+    function renderListsManager() {
+      const aList = document.getElementById('assigneesList');
+      aList.innerHTML = customAssignees.map(a => `
+        <li class="flex justify-between items-center bg-slate-800 p-1.5 rounded">
+          <span>${a}</span>
+          <button onclick="removeAssignee('${a}')" class="text-red-400 hover:text-red-300 font-bold">✕</button>
+        </li>
+      `).join('');
+
+      const gList = document.getElementById('groupsList');
+      gList.innerHTML = customGroups.map(g => `
+        <li class="flex justify-between items-center bg-slate-800 p-1.5 rounded">
+          <span>${g}</span>
+          <button onclick="removeGroup('${g}')" class="text-red-400 hover:text-red-300 font-bold">✕</button>
+        </li>
+      `).join('');
+    }
+
+    function addCustomAssignee() {
+      const val = document.getElementById('newAssigneeInput').value.trim();
+      if (val && !customAssignees.includes(val)) {
+        customAssignees.push(val);
+        localStorage.setItem('team_tasks_assignees_v2', JSON.stringify(customAssignees));
+        document.getElementById('newAssigneeInput').value = '';
+        populateDropdowns();
+        renderListsManager();
+      }
+    }
+
+    function removeAssignee(val) {
+      if (customAssignees.length <= 1) {
+        alert("You must have at least one assignee!");
+        return;
+      }
+      customAssignees = customAssignees.filter(a => a !== val);
+      localStorage.setItem('team_tasks_assignees_v2', JSON.stringify(customAssignees));
+      populateDropdowns();
+      renderListsManager();
+    }
+
+    function addCustomGroup() {
+      const val = document.getElementById('newGroupInput').value.trim();
+      if (val && !customGroups.includes(val)) {
+        customGroups.push(val);
+        localStorage.setItem('team_tasks_groups_v2', JSON.stringify(customGroups));
+        document.getElementById('newGroupInput').value = '';
+        populateDropdowns();
+        renderListsManager();
+      }
+    }
+
+    function removeGroup(val) {
+      if (customGroups.length <= 1) {
+        alert("You must have at least one task group!");
+        return;
+      }
+      customGroups = customGroups.filter(g => g !== val);
+      localStorage.setItem('team_tasks_groups_v2', JSON.stringify(customGroups));
+      populateDropdowns();
+      renderListsManager();
+    }
+
+    // CSV EXPORT
     function exportCSV() {
       const filtered = getFilteredTasks();
       if (filtered.length === 0) {
@@ -962,7 +850,7 @@
       let csv = "Task_ID,Title,Group,Assignee,Status,Priority,Progress_Percent,Year_Month,Start_Date,End_Date,Comment\n";
       filtered.forEach(t => {
         const progress = getProgressByStatus(t.status);
-        csv += `"${t.taskId}","${t.title.replace(/"/g, '""')}","${t.group}","${t.assignee}","${t.status}","${t.priority}","${progress}%","${getYearMonth(t.endDate)}","${t.startDate || ''}","${t.endDate || ''}","${(t.comment || '').replace(/"/g, '""')}"\n`;
+        csv += `"${t.id}","${t.title.replace(/"/g, '""')}","${t.group}","${t.assignee}","${t.status}","${t.priority}","${progress}%","${getYearMonth(t.endDate)}","${t.startDate || ''}","${t.endDate || ''}","${(t.comment || '').replace(/"/g, '""')}"\n`;
       });
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -974,7 +862,7 @@
       document.body.removeChild(link);
     }
 
-    // SMART CSV IMPORT (Option A: Overwrite/Update existing tasks by Task_ID or Title)
+    // SMART CSV IMPORT (OPTION A: OVERWRITE/UPDATE MATCHING TASK ID OR TITLE)
     function importCSV(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -983,70 +871,56 @@
       reader.onload = function(evt) {
         const text = evt.target.result;
         const lines = text.split('\n');
-        
         let updatedCount = 0;
         let createdCount = 0;
 
         for (let i = 1; i < lines.length; i++) {
           const line = lines[i].trim();
           if (!line) continue;
+          const cols = line.split(',').map(c => c.replace(/^"|"\$/g, '').trim());
           
-          const cols = line.split(',').map(c => c.replace(/^"|"$/g, '').trim());
           if (cols.length >= 2) {
-            const impTaskId = cols[0] ? cols[0].toUpperCase() : '';
-            const impTitle = cols[1] || 'Imported Task';
-            const impGroup = cols[2] || groups[0] || 'HR';
-            const impAssignee = cols[3] || assignees[0] || 'Kashyap';
-            const impStatus = cols[4] || 'Not Started';
-            const impPriority = cols[5] || 'Medium';
-            const impStartDate = cols[7] || '';
-            const impEndDate = cols[8] || '';
-            const impComment = cols[9] || '';
+            const importedId = parseInt(cols[0], 10);
+            const importedTitle = cols[1] || cols[0];
 
-            // Match by Task ID or Title (case-insensitive)
-            const existingIdx = tasks.findIndex(t => 
-              (impTaskId && t.taskId.toUpperCase() === impTaskId) || 
-              (t.title.trim().toLowerCase() === impTitle.trim().toLowerCase())
-            );
+            let existingIndex = -1;
+            if (!isNaN(importedId)) {
+              existingIndex = tasks.findIndex(t => t.id === importedId);
+            }
+            if (existingIndex === -1 && importedTitle) {
+              existingIndex = tasks.findIndex(t => t.title.toLowerCase() === importedTitle.toLowerCase());
+            }
 
-            if (existingIdx !== -1) {
-              // OVERWRITE / UPDATE existing task
-              tasks[existingIdx] = {
-                ...tasks[existingIdx],
-                group: impGroup,
-                assignee: impAssignee,
-                status: impStatus,
-                priority: impPriority,
-                startDate: impStartDate,
-                endDate: impEndDate,
-                comment: impComment
-              };
+            const updatedTask = {
+              id: existingIndex !== -1 ? tasks[existingIndex].id : (!isNaN(importedId) ? importedId : (Date.now() + i)),
+              title: cols[1] || cols[0] || 'Imported Task',
+              group: cols[2] || customGroups[0] || 'HR',
+              assignee: cols[3] || customAssignees[0] || 'Kashyap',
+              status: cols[4] || 'Not Started',
+              priority: cols[5] || 'Medium',
+              startDate: cols[8] || '',
+              endDate: cols[9] || '',
+              comment: cols[10] || ''
+            };
+
+            if (existingIndex !== -1) {
+              tasks[existingIndex] = updatedTask;
               updatedCount++;
             } else {
-              // CREATE new task
-              tasks.unshift({
-                taskId: impTaskId.startsWith('TASK-') ? impTaskId : generateNextTaskId(),
-                title: impTitle,
-                group: impGroup,
-                assignee: impAssignee,
-                status: impStatus,
-                priority: impPriority,
-                startDate: impStartDate,
-                endDate: impEndDate,
-                comment: impComment
-              });
+              tasks.unshift(updatedTask);
               createdCount++;
             }
           }
         }
-
         saveData();
-        alert(`CSV Import Summary:\n• Updated / Overwritten: ${updatedCount} task(s)\n• Created New: ${createdCount} task(s)`);
+        alert(`Import Complete!\n• ${updatedCount} existing tasks updated.\n• ${createdCount} new tasks created.`);
       };
       reader.readAsText(file);
     }
 
-    populateDropdownOptions();
+    // INITIALIZATION
+    applySlicerConfig();
+    populateDropdowns();
     populateYearMonthSlicer();
     renderApp();
   </script>
