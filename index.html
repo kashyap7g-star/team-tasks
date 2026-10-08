@@ -24,7 +24,7 @@
         <h1 class="text-2xl font-bold text-white flex items-center gap-2">
           <span>📋</span> Team Task Manager
         </h1>
-        <p class="text-slate-400 text-sm mt-1">Collaborative dashboard with multi-view tracking, custom management & department analytics</p>
+        <p class="text-slate-400 text-sm mt-1">Collaborative task dashboard with Task ID tracking, smart CSV update, & team analytics</p>
       </div>
 
       <!-- Actions -->
@@ -121,7 +121,10 @@
   <div id="taskModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="bg-slate-800 border border-slate-700 w-full max-w-lg rounded-xl p-6 shadow-2xl">
       <div class="flex justify-between items-center mb-5">
-        <h3 id="modalHeading" class="text-lg font-bold text-white">Create New Task</h3>
+        <div>
+          <h3 id="modalHeading" class="text-lg font-bold text-white">Create New Task</h3>
+          <span id="mTaskIdDisplay" class="text-xs font-mono font-bold text-purple-400"></span>
+        </div>
         <button onclick="closeModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
       </div>
       
@@ -268,8 +271,8 @@
     let defaultAssignees = ['Kashyap', 'Melisa', 'Albus', 'Brooke'];
     let defaultGroups = ['HR', 'Finance', 'IT', 'Marketing', 'Operations', 'Sales', 'Legal'];
 
-    let assignees = JSON.parse(localStorage.getItem('team_assignees_v6')) || defaultAssignees;
-    let groups = JSON.parse(localStorage.getItem('team_groups_v6')) || defaultGroups;
+    let assignees = JSON.parse(localStorage.getItem('team_assignees_v7')) || defaultAssignees;
+    let groups = JSON.parse(localStorage.getItem('team_groups_v7')) || defaultGroups;
 
     // Helper for Automatic Status Progress
     function getProgressByStatus(status) {
@@ -280,18 +283,18 @@
     }
 
     let defaultData = [
-      { id: 1, title: 'Annual Financial Audit', group: 'Finance', assignee: 'Kashyap', status: 'In Progress', priority: 'High', startDate: '2026-10-01', endDate: '2026-10-15', comment: 'Audit team requested additional ledger statements.' },
-      { id: 2, title: 'Onboard Senior Engineers', group: 'HR', assignee: 'Melisa', status: 'Not Started', priority: 'Medium', startDate: '2026-10-10', endDate: '2026-10-25', comment: 'Waiting for IT to assign work laptops.' },
-      { id: 3, title: 'Server OS Security Patch', group: 'IT', assignee: 'Albus', status: 'Under Review', priority: 'Urgent', startDate: '2026-10-05', endDate: '2026-10-09', comment: 'Patches deployed to staging environment.' },
-      { id: 4, title: 'Q4 Marketing Strategy', group: 'Marketing', assignee: 'Brooke', status: 'Completed', priority: 'High', startDate: '2026-09-15', endDate: '2026-10-01', comment: 'Approved by leadership team.' }
+      { taskId: 'TASK-1001', title: 'Annual Financial Audit', group: 'Finance', assignee: 'Kashyap', status: 'In Progress', priority: 'High', startDate: '2026-10-01', endDate: '2026-10-15', comment: 'Audit team requested additional ledger statements.' },
+      { taskId: 'TASK-1002', title: 'Onboard Senior Engineers', group: 'HR', assignee: 'Melisa', status: 'Not Started', priority: 'Medium', startDate: '2026-10-10', endDate: '2026-10-25', comment: 'Waiting for IT to assign work laptops.' },
+      { taskId: 'TASK-1003', title: 'Server OS Security Patch', group: 'IT', assignee: 'Albus', status: 'Under Review', priority: 'Urgent', startDate: '2026-10-05', endDate: '2026-10-09', comment: 'Patches deployed to staging environment.' },
+      { taskId: 'TASK-1004', title: 'Q4 Marketing Strategy', group: 'Marketing', assignee: 'Brooke', status: 'Completed', priority: 'High', startDate: '2026-09-15', endDate: '2026-10-01', comment: 'Approved by leadership team.' }
     ];
 
     let tasks = [];
     try {
-      let saved = JSON.parse(localStorage.getItem('team_tasks_v6'));
+      let saved = JSON.parse(localStorage.getItem('team_tasks_v7'));
       if (Array.isArray(saved) && saved.length > 0) {
-        tasks = saved.map(t => ({
-          id: t.id || Date.now() + Math.random(),
+        tasks = saved.map((t, idx) => ({
+          taskId: t.taskId || `TASK-${1001 + idx}`,
           title: t.title || 'Untitled Task',
           group: t.group || groups[0] || 'HR',
           assignee: t.assignee || assignees[0] || 'Kashyap',
@@ -310,9 +313,21 @@
 
     const STATUSES = ['Not Started', 'In Progress', 'Under Review', 'Completed'];
 
+    // TASK ID GENERATOR
+    function generateNextTaskId() {
+      let maxNum = 1000;
+      tasks.forEach(t => {
+        if (t.taskId && t.taskId.startsWith('TASK-')) {
+          const num = parseInt(t.taskId.replace('TASK-', ''), 10);
+          if (!isNaN(num) && num > maxNum) maxNum = num;
+        }
+      });
+      return `TASK-${maxNum + 1}`;
+    }
+
     function saveAssigneesAndGroups() {
-      localStorage.setItem('team_assignees_v6', JSON.stringify(assignees));
-      localStorage.setItem('team_groups_v6', JSON.stringify(groups));
+      localStorage.setItem('team_assignees_v7', JSON.stringify(assignees));
+      localStorage.setItem('team_groups_v7', JSON.stringify(groups));
       populateDropdownOptions();
       renderApp();
     }
@@ -424,7 +439,7 @@
     }
 
     function saveData() {
-      localStorage.setItem('team_tasks_v6', JSON.stringify(tasks));
+      localStorage.setItem('team_tasks_v7', JSON.stringify(tasks));
       populateYearMonthSlicer();
       renderApp();
     }
@@ -493,6 +508,7 @@
         const progress = getProgressByStatus(t.status);
         rows += `
           <tr class="hover:bg-slate-700/30 transition">
+            <td class="p-3.5 font-mono text-xs font-bold text-purple-400">${t.taskId}</td>
             <td class="p-3.5 font-medium text-white max-w-xs">
               <div class="font-semibold text-sm">${t.title}</div>
               ${t.comment ? `<div class="text-xs text-slate-400 italic mt-1 bg-slate-900/60 p-1.5 rounded border border-slate-700/50">💬 ${t.comment}</div>` : ''}
@@ -503,14 +519,14 @@
             <td class="p-3.5 text-xs text-purple-300 font-medium">${getYearMonth(t.endDate)}</td>
             <td class="p-3.5">${renderCircularProgress(progress)}</td>
             <td class="p-3.5">
-              <select onchange="updateStatus(${t.id}, this.value)" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 font-medium focus:outline-none focus:border-blue-500">
+              <select onchange="updateStatus('${t.taskId}', this.value)" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 font-medium focus:outline-none focus:border-blue-500">
                 ${STATUSES.map(s => `<option value="${s}" ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}
               </select>
             </td>
             <td class="p-3.5">
               <div class="flex items-center gap-3">
-                <button onclick="editTask(${t.id})" class="text-xs text-blue-400 hover:text-blue-300 font-semibold">Edit</button>
-                <button onclick="promptDeleteTask(${t.id}, '${t.title.replace(/'/g, "\\'")}')" class="text-xs text-red-400 hover:text-red-300 font-semibold">Delete</button>
+                <button onclick="editTask('${t.taskId}')" class="text-xs text-blue-400 hover:text-blue-300 font-semibold">Edit</button>
+                <button onclick="promptDeleteTask('${t.taskId}', '${t.title.replace(/'/g, "\\'")}')" class="text-xs text-red-400 hover:text-red-300 font-semibold">Delete</button>
               </div>
             </td>
           </tr>
@@ -522,6 +538,7 @@
           <table class="w-full text-left border-collapse">
             <thead>
               <tr class="bg-slate-900/80 text-slate-400 text-xs uppercase border-b border-slate-700">
+                <th class="p-3.5">Task ID</th>
                 <th class="p-3.5">Task Title & Comment</th>
                 <th class="p-3.5">Group</th>
                 <th class="p-3.5">Assignee</th>
@@ -533,7 +550,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700/50 text-sm">
-              ${rows || '<tr><td colspan="8" class="p-6 text-center text-slate-500">No matching tasks found.</td></tr>'}
+              ${rows || '<tr><td colspan="9" class="p-6 text-center text-slate-500">No matching tasks found.</td></tr>'}
             </tbody>
           </table>
         </div>
@@ -554,8 +571,11 @@
           cards += `
             <div class="bg-slate-900 p-4 rounded-xl border border-slate-700/60 flex flex-col justify-between gap-3 shadow-sm">
               <div class="flex justify-between items-start gap-2">
-                <div class="font-semibold text-sm text-white">${t.title}</div>
-                <button onclick="editTask(${t.id})" class="text-xs text-blue-400 hover:text-blue-300 font-medium">Edit</button>
+                <div>
+                  <span class="text-[10px] font-mono font-bold text-purple-400">${t.taskId}</span>
+                  <div class="font-semibold text-sm text-white">${t.title}</div>
+                </div>
+                <button onclick="editTask('${t.taskId}')" class="text-xs text-blue-400 hover:text-blue-300 font-medium">Edit</button>
               </div>
 
               ${t.comment ? `<p class="text-xs text-slate-400 italic bg-slate-950/60 p-2 rounded border border-slate-800">💬 ${t.comment}</p>` : ''}
@@ -602,8 +622,8 @@
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Chart 1: Task Duration (Days) -->
             <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl">
-              <h3 class="text-sm font-bold text-white mb-1">Task Duration (Start to End Date in Days)</h3>
-              <p class="text-xs text-slate-400 mb-4">Calculated span per task</p>
+              <h3 class="text-sm font-bold text-white mb-1">Task Duration by Task ID (Days)</h3>
+              <p class="text-xs text-slate-400 mb-4">Calculated span per Task ID</p>
               <div class="h-72 relative">
                 <canvas id="chartDuration"></canvas>
               </div>
@@ -653,8 +673,8 @@
 
       const filtered = getFilteredTasks();
 
-      // CHART 1: Task Durations
-      const durationLabels = filtered.map(t => t.title.length > 18 ? t.title.substring(0, 18) + '...' : t.title);
+      // CHART 1: Task Durations by Task ID
+      const durationLabels = filtered.map(t => `${t.taskId}: ${t.title.length > 12 ? t.title.substring(0, 12) + '...' : t.title}`);
       const durationData = filtered.map(t => {
         if (!t.startDate || !t.endDate) return 1;
         const d1 = new Date(t.startDate);
@@ -828,8 +848,8 @@
       return 'bg-slate-700 text-slate-300';
     }
 
-    function updateStatus(id, newStatus) {
-      tasks = tasks.map(t => t.id === id ? { ...t, status: newStatus } : t);
+    function updateStatus(taskId, newStatus) {
+      tasks = tasks.map(t => t.taskId === taskId ? { ...t, status: newStatus } : t);
       saveData();
     }
 
@@ -838,11 +858,11 @@
       document.getElementById('charCount').innerText = left + ' left';
     }
 
-    function promptDeleteTask(id, title) {
-      pendingDeleteId = id;
-      document.getElementById('confirmMsg').innerText = `Are you sure you want to delete "${title}"?`;
+    function promptDeleteTask(taskId, title) {
+      pendingDeleteId = taskId;
+      document.getElementById('confirmMsg').innerText = `Are you sure you want to delete task ${taskId} ("${title}")?`;
       document.getElementById('confirmDeleteBtn').onclick = () => {
-        tasks = tasks.filter(t => t.id !== pendingDeleteId);
+        tasks = tasks.filter(t => t.taskId !== pendingDeleteId);
         saveData();
         closeConfirmModal();
       };
@@ -856,6 +876,7 @@
 
     function openModal() {
       document.getElementById('mTaskId').value = '';
+      document.getElementById('mTaskIdDisplay').innerText = `ID: ${generateNextTaskId()} (Auto)`;
       document.getElementById('modalHeading').innerText = 'Create New Task';
       document.getElementById('mTitle').value = '';
       document.getElementById('mGroup').value = groups[0] || 'HR';
@@ -869,11 +890,12 @@
       document.getElementById('taskModal').classList.add('modal-active');
     }
 
-    function editTask(id) {
-      const t = tasks.find(x => x.id === id);
+    function editTask(taskId) {
+      const t = tasks.find(x => x.taskId === taskId);
       if (!t) return;
 
-      document.getElementById('mTaskId').value = t.id;
+      document.getElementById('mTaskId').value = t.taskId;
+      document.getElementById('mTaskIdDisplay').innerText = `ID: ${t.taskId}`;
       document.getElementById('modalHeading').innerText = 'Edit Task';
       document.getElementById('mTitle').value = t.title;
       document.getElementById('mGroup').value = t.group;
@@ -915,12 +937,13 @@
       const comment = document.getElementById('mComment').value;
 
       if (taskId) {
-        tasks = tasks.map(t => t.id == taskId ? {
+        tasks = tasks.map(t => t.taskId === taskId ? {
           ...t, title, group, assignee, status, priority, startDate, endDate, comment
         } : t);
       } else {
+        const newId = generateNextTaskId();
         tasks.unshift({
-          id: Date.now(), title, group, assignee, status, priority, startDate, endDate, comment
+          taskId: newId, title, group, assignee, status, priority, startDate, endDate, comment
         });
       }
 
@@ -928,7 +951,7 @@
       closeModal();
     }
 
-    // CSV EXPORT
+    // CSV EXPORT (Includes Task ID)
     function exportCSV() {
       const filtered = getFilteredTasks();
       if (filtered.length === 0) {
@@ -936,10 +959,10 @@
         return;
       }
 
-      let csv = "Title,Group,Assignee,Status,Priority,Progress_Percent,Year_Month,Start_Date,End_Date,Comment\n";
+      let csv = "Task_ID,Title,Group,Assignee,Status,Priority,Progress_Percent,Year_Month,Start_Date,End_Date,Comment\n";
       filtered.forEach(t => {
         const progress = getProgressByStatus(t.status);
-        csv += `"${t.title.replace(/"/g, '""')}","${t.group}","${t.assignee}","${t.status}","${t.priority}","${progress}%","${getYearMonth(t.endDate)}","${t.startDate || ''}","${t.endDate || ''}","${(t.comment || '').replace(/"/g, '""')}"\n`;
+        csv += `"${t.taskId}","${t.title.replace(/"/g, '""')}","${t.group}","${t.assignee}","${t.status}","${t.priority}","${progress}%","${getYearMonth(t.endDate)}","${t.startDate || ''}","${t.endDate || ''}","${(t.comment || '').replace(/"/g, '""')}"\n`;
       });
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -951,7 +974,7 @@
       document.body.removeChild(link);
     }
 
-    // CSV IMPORT
+    // SMART CSV IMPORT (Option A: Overwrite/Update existing tasks by Task_ID or Title)
     function importCSV(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -960,38 +983,72 @@
       reader.onload = function(evt) {
         const text = evt.target.result;
         const lines = text.split('\n');
-        let count = 0;
+        
+        let updatedCount = 0;
+        let createdCount = 0;
 
         for (let i = 1; i < lines.length; i++) {
           const line = lines[i].trim();
           if (!line) continue;
+          
           const cols = line.split(',').map(c => c.replace(/^"|"$/g, '').trim());
           if (cols.length >= 2) {
-            tasks.unshift({
-              id: Date.now() + i,
-              title: cols[0] || 'Imported Task',
-              group: cols[1] || groups[0] || 'HR',
-              assignee: cols[2] || assignees[0] || 'Kashyap',
-              status: cols[3] || 'Not Started',
-              priority: cols[4] || 'Medium',
-              startDate: cols[7] || '',
-              endDate: cols[8] || '',
-              comment: cols[9] || ''
-            });
-            count++;
+            const impTaskId = cols[0] ? cols[0].toUpperCase() : '';
+            const impTitle = cols[1] || 'Imported Task';
+            const impGroup = cols[2] || groups[0] || 'HR';
+            const impAssignee = cols[3] || assignees[0] || 'Kashyap';
+            const impStatus = cols[4] || 'Not Started';
+            const impPriority = cols[5] || 'Medium';
+            const impStartDate = cols[7] || '';
+            const impEndDate = cols[8] || '';
+            const impComment = cols[9] || '';
+
+            // Match by Task ID or Title (case-insensitive)
+            const existingIdx = tasks.findIndex(t => 
+              (impTaskId && t.taskId.toUpperCase() === impTaskId) || 
+              (t.title.trim().toLowerCase() === impTitle.trim().toLowerCase())
+            );
+
+            if (existingIdx !== -1) {
+              // OVERWRITE / UPDATE existing task
+              tasks[existingIdx] = {
+                ...tasks[existingIdx],
+                group: impGroup,
+                assignee: impAssignee,
+                status: impStatus,
+                priority: impPriority,
+                startDate: impStartDate,
+                endDate: impEndDate,
+                comment: impComment
+              };
+              updatedCount++;
+            } else {
+              // CREATE new task
+              tasks.unshift({
+                taskId: impTaskId.startsWith('TASK-') ? impTaskId : generateNextTaskId(),
+                title: impTitle,
+                group: impGroup,
+                assignee: impAssignee,
+                status: impStatus,
+                priority: impPriority,
+                startDate: impStartDate,
+                endDate: impEndDate,
+                comment: impComment
+              });
+              createdCount++;
+            }
           }
         }
+
         saveData();
-        alert(`Successfully imported ${count} tasks!`);
+        alert(`CSV Import Summary:\n• Updated / Overwritten: ${updatedCount} task(s)\n• Created New: ${createdCount} task(s)`);
       };
       reader.readAsText(file);
     }
 
-    // INITIALIZATION
     populateDropdownOptions();
     populateYearMonthSlicer();
     renderApp();
   </script>
 </body>
 </html>
-```
