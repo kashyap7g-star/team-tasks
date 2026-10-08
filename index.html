@@ -60,7 +60,10 @@
       
       <!-- View Switcher -->
       <div class="flex bg-slate-900 p-1 rounded-lg border border-slate-700/60 self-start md:self-auto">
-        <button onclick="switchView('table')" id="tab-table" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition bg-blue-600 text-white">
+        <button onclick="switchView('kanban')" id="tab-kanban" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition bg-blue-600 text-white">
+          Kanban Board
+        </button>
+        <button onclick="switchView('table')" id="tab-table" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition text-slate-400 hover:text-slate-200">
           Table View
         </button>
         <button onclick="switchView('grouped')" id="tab-grouped" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition text-slate-400 hover:text-slate-200">
@@ -291,8 +294,9 @@
   <script>
     Chart.register(ChartDataLabels);
 
-    let currentView = 'table';
+    let currentView = 'kanban';
     let pendingDeleteTaskId = null;
+    let expandedAssignee = null;
 
     // SLICER VISIBILITY CONFIG
     let slicerConfig = JSON.parse(localStorage.getItem('team_tasks_slicers_v2')) || {
@@ -447,7 +451,8 @@
       const container = document.getElementById('viewContainer');
       const filtered = getFilteredTasks();
 
-      if (currentView === 'table') renderTable(container, filtered);
+      if (currentView === 'kanban') renderKanban(container, filtered);
+      else if (currentView === 'table') renderTable(container, filtered);
       else if (currentView === 'grouped') renderGrouped(container, filtered);
       else if (currentView === 'analytics') renderAnalytics(container);
     }
@@ -475,7 +480,69 @@
       `;
     }
 
-    // 1. TABLE VIEW
+    // 1. KANBAN BOARD VIEW
+    function renderKanban(container, filtered) {
+      let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">';
+      
+      STATUSES.forEach(status => {
+        const colTasks = filtered.filter(t => t.status === status);
+        
+        let cardsHTML = '';
+        colTasks.forEach(t => {
+          const progress = getProgressByStatus(t.status);
+          cardsHTML += `
+            <div class="bg-slate-800 border border-slate-700 rounded-lg p-3.5 space-y-2.5 shadow-sm hover:border-slate-600 transition">
+              <div class="flex justify-between items-center">
+                <span class="text-[10px] font-mono text-blue-400 font-bold">#${t.id}</span>
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-purple-900/60 text-purple-300 border border-purple-700/50">${t.group}</span>
+              </div>
+              
+              <h4 class="font-semibold text-sm text-white">${t.title}</h4>
+
+              ${t.comment ? `<p class="text-xs bg-slate-900/80 text-slate-300 p-2 rounded border border-slate-700/50 italic">💬 "\${t.comment}"</p>` : ''}
+              
+              <div class="flex items-center justify-between pt-1 border-t border-slate-700/60">
+                <div class="flex items-center gap-2">
+                  ${getCircularProgressRing(progress)}
+                  <div class="text-xs">
+                    <span class="text-slate-400 block text-[10px]">Assignee</span>
+                    <strong class="text-slate-200">${t.assignee}</strong>
+                  </div>
+                </div>
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded ${getPriorityStyle(t.priority)}">${t.priority}</span>
+              </div>
+
+              <div class="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-700/60">
+                <span class="text-[10px] text-purple-300 font-semibold">📅 Due: ${t.endDate || 'N/A'}</span>
+                <div class="flex items-center gap-2">
+                  <button onclick="editTask(${t.id})" class="text-blue-400 hover:text-blue-300 font-bold">Edit</button>
+                  <button onclick="promptDeleteTask(${t.id})" class="text-red-400 hover:text-red-300 font-bold">✕</button>
+                </div>
+              </div>
+              
+              <select onchange="updateStatus(${t.id}, this.value)" class="w-full bg-slate-900 border border-slate-700 text-xs rounded px-2 py-1 text-slate-300 focus:outline-none">
+                ${STATUSES.map(s => `<option value="\${s}" ${s === t.status ? 'selected' : ''}>Move: ${s}</option>`).join('')}
+              </select>
+            </div>
+          `;
+        });
+
+        html += `
+          <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-3 flex flex-col min-h-[450px]">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-700/60 mb-3">
+              <h3 class="font-bold text-xs text-slate-300 uppercase tracking-wider">${status}</h3>
+              <span class="bg-slate-700 text-slate-200 text-xs px-2 py-0.5 rounded-full font-bold">${colTasks.length}</span>
+            </div>
+            <div class="space-y-3 flex-1">${cardsHTML || '<p class="text-xs text-slate-500 italic text-center pt-8">No tasks</p>'}</div>
+          </div>
+        `;
+      });
+
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    // 2. TABLE VIEW
     function renderTable(container, filtered) {
       let rows = '';
       filtered.forEach(t => {
@@ -531,7 +598,7 @@
       `;
     }
 
-    // 2. GROUPED VIEW
+    // 3. GROUPED VIEW
     function renderGrouped(container, filtered) {
       let html = '<div class="space-y-6">';
 
@@ -583,11 +650,68 @@
       container.innerHTML = html;
     }
 
-    // 3. ANALYTICS VIEW WITH PIE & DOUGHNUT CHARTS RESTORED
+    // 4. ANALYTICS VIEW WITH INTERACTIVE EXPANDABLE ASSIGNEE TASK LIST
+    function toggleAssigneeExpand(assigneeName) {
+      if (expandedAssignee === assigneeName) {
+        expandedAssignee = null;
+      } else {
+        expandedAssignee = assigneeName;
+      }
+      renderApp();
+    }
+
     function renderAnalytics(container) {
       const filtered = getFilteredTasks();
       const total = filtered.length;
       const avgProgress = total > 0 ? Math.round(filtered.reduce((sum, t) => sum + getProgressByStatus(t.status), 0) / total) : 0;
+
+      // Build Assignee Interactive Workload List
+      let assigneeRows = '';
+      customAssignees.forEach(a => {
+        const aTasks = filtered.filter(t => t.assignee === a);
+        const count = aTasks.length;
+        const isExpanded = expandedAssignee === a;
+
+        let taskListHtml = '';
+        if (isExpanded) {
+          if (count === 0) {
+            taskListHtml = `<div class="p-3 text-xs text-slate-400 italic">No tasks currently assigned to ${a}.</div>`;
+          } else {
+            let taskItems = '';
+            aTasks.forEach(t => {
+              taskItems += `
+                <div class="flex items-center justify-between p-2 rounded bg-slate-900/80 border border-slate-700/60 text-xs">
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono text-blue-400 font-bold">#${t.id}</span>
+                    <span class="text-white font-medium">${t.title}</span>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <span class="px-2 py-0.5 text-[10px] rounded bg-purple-900/50 text-purple-300 border border-purple-700/50">${t.group}</span>
+                    <span class="text-slate-300 font-semibold">${t.status} (${getProgressByStatus(t.status)}%)</span>
+                    <button onclick="editTask(${t.id})" class="text-blue-400 hover:text-blue-300 font-semibold text-[11px]">Edit</button>
+                  </div>
+                </div>
+              `;
+            });
+            taskListHtml = `<div class="p-3 space-y-2 bg-slate-950/60 rounded-b-lg border-x border-b border-slate-700/60">${taskItems}</div>`;
+          }
+        }
+
+        assigneeRows += `
+          <div class="border border-slate-700 rounded-lg overflow-hidden">
+            <div onclick="toggleAssigneeExpand('${a}')" class="flex items-center justify-between p-3.5 bg-slate-900/90 hover:bg-slate-700/40 cursor-pointer transition">
+              <div class="flex items-center gap-3">
+                <span class="text-slate-400 text-xs">${isExpanded ? '▼' : '►'}</span>
+                <span class="font-semibold text-sm text-white">👤 ${a}</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="bg-blue-950 text-blue-300 border border-blue-800 text-xs px-2.5 py-0.5 rounded-full font-bold">${count} ${count === 1 ? 'Task' : 'Tasks'}</span>
+              </div>
+            </div>
+            ${taskListHtml}
+          </div>
+        `;
+      });
 
       container.innerHTML = `
         <div class="space-y-6">
@@ -604,7 +728,16 @@
             </div>
           </div>
 
-          <!-- ROW 1: RESTORED PIE & DOUGHNUT CHARTS -->
+          <!-- ASSIGNEE INTERACTIVE WORKLOAD CARD -->
+          <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-700">
+              <h4 class="text-xs font-bold text-slate-300 uppercase">Assignee Task Count & Detailed List (Click to Expand)</h4>
+              <span class="text-xs text-slate-400">Total Assignees: ${customAssignees.length}</span>
+            </div>
+            <div class="space-y-2.5">${assigneeRows}</div>
+          </div>
+
+          <!-- ROW 1: STATUS & PRIORITY CHARTS -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl">
               <h4 class="text-xs font-bold text-slate-300 uppercase mb-4">Status Distribution (Pie Chart)</h4>
@@ -633,7 +766,7 @@
       `;
 
       setTimeout(() => {
-        // 1. RESTORED STATUS PIE CHART
+        // STATUS PIE CHART
         const statusCounts = STATUSES.map(s => filtered.filter(t => t.status === s).length);
         new Chart(document.getElementById('statusPieChart'), {
           type: 'pie',
@@ -660,7 +793,7 @@
           }
         });
 
-        // 2. RESTORED PRIORITY DOUGHNUT CHART
+        // PRIORITY DOUGHNUT CHART
         const priorities = ['Low', 'Medium', 'High', 'Urgent'];
         const priorityCounts = priorities.map(p => filtered.filter(t => t.priority === p).length);
         new Chart(document.getElementById('priorityDoughnutChart'), {
@@ -688,7 +821,7 @@
           }
         });
 
-        // 3. DURATION BAR CHART
+        // DURATION BAR CHART
         const durationTasks = filtered.filter(t => t.startDate && t.endDate).slice(0, 8);
         const durationLabels = durationTasks.map(t => `#${t.id} ${t.title.substring(0, 12)}...`);
         const durationData = durationTasks.map(t => {
@@ -718,7 +851,7 @@
           }
         });
 
-        // 4. TAT BAR CHART
+        // TAT BAR CHART
         const tatData = customAssignees.map(a => {
           const aTasks = filtered.filter(t => t.assignee === a && t.startDate && t.endDate);
           if (aTasks.length === 0) return 0;
