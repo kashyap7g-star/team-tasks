@@ -29,7 +29,7 @@
           <input type="file" id="csvFileInput" accept=".csv" onchange="importCSV(event)" class="hidden" />
         </label>
         <button onclick="exportCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
-          <span>📤</span> Export CSV
+          <span>📤</span> Export Filtered List (Excel)
         </button>
         <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 shadow-lg shadow-blue-500/20">
           <span>+</span> New Task
@@ -58,6 +58,19 @@
 
       <!-- Filters / Slicers -->
       <div class="flex flex-wrap items-center gap-3">
+        <!-- Status Slicer -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-400 font-medium">Status:</span>
+          <select id="filterStatus" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
+            <option value="All">All Statuses</option>
+            <option value="Not Started">Not Started</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Under Review">Under Review</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+
+        <!-- Task Group Slicer -->
         <div class="flex items-center gap-2">
           <span class="text-xs text-slate-400 font-medium">Task Group:</span>
           <select id="filterGroup" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
@@ -72,6 +85,7 @@
           </select>
         </div>
 
+        <!-- Priority Slicer -->
         <div class="flex items-center gap-2">
           <span class="text-xs text-slate-400 font-medium">Priority:</span>
           <select id="filterPriority" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
@@ -179,9 +193,15 @@
     }
 
     function getFilteredTasks() {
+      const s = document.getElementById('filterStatus').value;
       const g = document.getElementById('filterGroup').value;
       const p = document.getElementById('filterPriority').value;
-      return tasks.filter(t => (g === 'All' || t.group === g) && (p === 'All' || t.priority === p));
+      
+      return tasks.filter(t => 
+        (s === 'All' || t.status === s) &&
+        (g === 'All' || t.group === g) &&
+        (p === 'All' || t.priority === p)
+      );
     }
 
     function renderApp() {
@@ -206,16 +226,16 @@
           cardsHTML += `
             <div class="bg-slate-800 border border-slate-700 rounded-lg p-3.5 space-y-2.5 shadow-sm">
               <div class="flex justify-between items-center">
-                <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-purple-900/60 text-purple-300 border border-purple-700/50">${t.group}</span>
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-purple-900/60 text-purple-300 border border-purple-700/50">\${t.group}</span>
                 <span class="px-2 py-0.5 text-[10px] font-bold rounded ${getPriorityStyle(t.priority)}">${t.priority}</span>
               </div>
-              <h4 class="font-semibold text-sm text-white">${t.title}</h4>
+              <h4 class="font-semibold text-sm text-white">\${t.title}</h4>
               <div class="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-700/60">
-                <span>👤 ${t.assignee || 'Unassigned'}</span>
-                <button onclick="deleteTask(${t.id})" class="text-red-400 hover:text-red-300 font-bold">✕</button>
+                <span>👤 \${t.assignee || 'Unassigned'}</span>
+                <button onclick="deleteTask(\${t.id})" class="text-red-400 hover:text-red-300 font-bold">✕</button>
               </div>
-              <select onchange="updateStatus(${t.id}, this.value)" class="w-full bg-slate-900 border border-slate-700 text-xs rounded px-2 py-1 text-slate-300 focus:outline-none">
-                ${STATUSES.map(s => `<option value="\${s}" ${s === t.status ? 'selected' : ''}>Move: ${s}</option>`).join('')}
+              <select onchange="updateStatus(\${t.id}, this.value)" class="w-full bg-slate-900 border border-slate-700 text-xs rounded px-2 py-1 text-slate-300 focus:outline-none">
+                \${STATUSES.map(s => `<option value="${s}" ${s === t.status ? 'selected' : ''}>Move: ${s}</option>`).join('')}
               </select>
             </div>
           `;
@@ -224,10 +244,10 @@
         html += `
           <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-3 flex flex-col min-h-[450px]">
             <div class="flex items-center justify-between pb-3 border-b border-slate-700/60 mb-3">
-              <h3 class="font-bold text-xs text-slate-300 uppercase tracking-wider">${status}</h3>
-              <span class="bg-slate-700 text-slate-200 text-xs px-2 py-0.5 rounded-full font-bold">${colTasks.length}</span>
+              <h3 class="font-bold text-xs text-slate-300 uppercase tracking-wider">\${status}</h3>
+              <span class="bg-slate-700 text-slate-200 text-xs px-2 py-0.5 rounded-full font-bold">\${colTasks.length}</span>
             </div>
-            <div class="space-y-3 flex-1">${cardsHTML || '<p class="text-xs text-slate-500 italic text-center pt-8">No tasks</p>'}</div>
+            <div class="space-y-3 flex-1">\${cardsHTML || '<p class="text-xs text-slate-500 italic text-center pt-8">No tasks</p>'}</div>
           </div>
         `;
       });
@@ -242,17 +262,17 @@
       filtered.forEach(t => {
         rows += `
           <tr class="hover:bg-slate-700/30 transition">
-            <td class="p-3.5 font-medium text-white">${t.title}</td>
-            <td class="p-3.5"><span class="px-2 py-0.5 text-xs rounded bg-purple-900/50 text-purple-300 border border-purple-700/50 font-medium">${t.group}</span></td>
-            <td class="p-3.5 text-slate-300">${t.assignee || 'Unassigned'}</td>
+            <td class="p-3.5 font-medium text-white">\${t.title}</td>
+            <td class="p-3.5"><span class="px-2 py-0.5 text-xs rounded bg-purple-900/50 text-purple-300 border border-purple-700/50 font-medium">\${t.group}</span></td>
+            <td class="p-3.5 text-slate-300">\${t.assignee || 'Unassigned'}</td>
             <td class="p-3.5"><span class="px-2 py-0.5 text-xs rounded ${getPriorityStyle(t.priority)}">${t.priority}</span></td>
             <td class="p-3.5">
-              <select onchange="updateStatus(${t.id}, this.value)" class="bg-slate-900 border border-slate-700 text-xs rounded px-2 py-1 text-slate-200">
-                ${STATUSES.map(s => `<option value="\${s}" ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}
+              <select onchange="updateStatus(\${t.id}, this.value)" class="bg-slate-900 border border-slate-700 text-xs rounded px-2 py-1 text-slate-200">
+                \${STATUSES.map(s => `<option value="${s}" ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}
               </select>
             </td>
             <td class="p-3.5">
-              <button onclick="deleteTask(${t.id})" class="text-xs text-red-400 hover:text-red-300 font-semibold">Delete</button>
+              <button onclick="deleteTask(\${t.id})" class="text-xs text-red-400 hover:text-red-300 font-semibold">Delete</button>
             </td>
           </tr>
         `;
@@ -271,202 +291,4 @@
                 <th class="p-3.5">Actions</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-700/50 text-sm">
-              ${rows || '<tr><td colspan="6" class="p-6 text-center text-slate-500">No matching tasks found.</td></tr>'}
-            </tbody>
-          </table>
-        </div>
-      `;
-    }
-
-    // GROUPED VIEW
-    function renderGrouped(container, filtered) {
-      const groups = ['HR', 'Finance', 'IT', 'Marketing', 'Operations', 'Sales', 'Legal'];
-      let html = '<div class="space-y-6">';
-
-      groups.forEach(g => {
-        const groupTasks = filtered.filter(t => t.group === g);
-        if (groupTasks.length === 0) return;
-
-        let cards = '';
-        groupTasks.forEach(t => {
-          cards += `
-            <div class="bg-slate-900 p-3 rounded-lg border border-slate-700/60 flex flex-col justify-between gap-2">
-              <div class="font-semibold text-sm text-white">${t.title}</div>
-              <div class="flex items-center justify-between text-xs text-slate-400">
-                <span>👤 ${t.assignee}</span>
-                <span class="px-2 py-0.5 text-[10px] rounded ${getPriorityStyle(t.priority)}">${t.priority}</span>
-              </div>
-            </div>
-          `;
-        });
-
-        html += `
-          <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-4">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-700 mb-3">
-              <h3 class="font-bold text-md text-purple-300">📁 ${g} Department</h3>
-              <span class="bg-purple-950/80 text-purple-300 border border-purple-700/50 text-xs px-2.5 py-0.5 rounded-full font-bold">${groupTasks.length} Tasks</span>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">${cards}</div>
-          </div>
-        `;
-      });
-
-      html += '</div>';
-      container.innerHTML = html;
-    }
-
-    // ANALYTICS & PROGRESS BARS VIEW
-    function renderAnalytics(container) {
-      const total = tasks.length;
-      const completed = tasks.filter(t => t.status === 'Completed').length;
-      const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
-      const groups = ['HR', 'Finance', 'IT', 'Marketing', 'Operations', 'Sales', 'Legal'];
-
-      let groupBars = '';
-      groups.forEach(g => {
-        const gTasks = tasks.filter(t => t.group === g);
-        const gDone = gTasks.filter(t => t.status === 'Completed').length;
-        const gPct = gTasks.length > 0 ? Math.round((gDone / gTasks.length) * 100) : 0;
-
-        groupBars += `
-          <div>
-            <div class="flex justify-between text-xs font-semibold mb-1">
-              <span class="text-slate-200">${g} (${gDone}/${gTasks.length} Completed)</span>
-              <span class="text-purple-300">${gPct}%</span>
-            </div>
-            <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-700/60">
-              <div class="bg-purple-500 h-full rounded-full transition-all duration-300" style="width: ${gPct}%"></div>
-            </div>
-          </div>
-        `;
-      });
-
-      container.innerHTML = `
-        <div class="space-y-6">
-          <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-xl">
-            <div class="flex justify-between items-center mb-3">
-              <div>
-                <h3 class="text-lg font-bold text-white">Overall Progress</h3>
-                <p class="text-xs text-slate-400">Total completion rate across all departments</p>
-              </div>
-              <span class="text-2xl font-black text-blue-400">${percent}%</span>
-            </div>
-            <div class="w-full bg-slate-900 rounded-full h-4 overflow-hidden border border-slate-700 p-0.5">
-              <div class="bg-gradient-to-r from-blue-500 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: ${percent}%"></div>
-            </div>
-          </div>
-
-          <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-xl">
-            <h3 class="text-md font-bold text-white mb-4">Departmental Workload Progress</h3>
-            <div class="space-y-4">${groupBars}</div>
-          </div>
-        </div>
-      `;
-    }
-
-    // UTILITIES
-    function getPriorityStyle(p) {
-      if (p === 'Urgent') return 'bg-red-950 text-red-300 border border-red-800/60';
-      if (p === 'High') return 'bg-amber-950 text-amber-300 border border-amber-800/60';
-      if (p === 'Medium') return 'bg-blue-950 text-blue-300 border border-blue-800/60';
-      return 'bg-slate-700 text-slate-300';
-    }
-
-    function updateStatus(id, newStatus) {
-      tasks = tasks.map(t => t.id === id ? { ...t, status: newStatus } : t);
-      saveData();
-    }
-
-    function deleteTask(id) {
-      tasks = tasks.filter(t => t.id !== id);
-      saveData();
-    }
-
-    function openModal() {
-      document.getElementById('taskModal').classList.add('modal-active');
-    }
-
-    function closeModal() {
-      document.getElementById('taskModal').classList.remove('modal-active');
-    }
-
-    function handleAddTask(e) {
-      e.preventDefault();
-      const newTask = {
-        id: Date.now(),
-        title: document.getElementById('mTitle').value,
-        group: document.getElementById('mGroup').value,
-        assignee: document.getElementById('mAssignee').value || 'Unassigned',
-        status: document.getElementById('mStatus').value,
-        priority: document.getElementById('mPriority').value
-      };
-
-      tasks.unshift(newTask);
-      saveData();
-      closeModal();
-      document.getElementById('mTitle').value = '';
-      document.getElementById('mAssignee').value = '';
-    }
-
-    // CSV EXPORT (Native JS, no external dependency)
-    function exportCSV() {
-      if (tasks.length === 0) {
-        alert("No tasks to export!");
-        return;
-      }
-      
-      let csv = "Title,Group,Assignee,Status,Priority\n";
-      tasks.forEach(t => {
-        csv += `"${t.title.replace(/"/g, '""')}","${t.group}","${t.assignee}","${t.status}","${t.priority}"\n`;
-      });
-
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.setAttribute('download', 'Team_Task_Report.csv');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    // CSV IMPORT (Native JS CSV Parsing)
-    function importCSV(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        const text = evt.target.result;
-        const lines = text.split('\n');
-        let importedCount = 0;
-
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i].trim();
-          if (!line) continue;
-
-          const cols = line.split(',').map(c => c.replace(/^"|"\$/g, '').trim());
-          if (cols.length >= 2) {
-            tasks.unshift({
-              id: Date.now() + i,
-              title: cols[0] || 'Imported Task',
-              group: cols[1] || 'HR',
-              assignee: cols[2] || 'Unassigned',
-              status: cols[3] || 'Not Started',
-              priority: cols[4] || 'Medium'
-            });
-            importedCount++;
-          }
-        }
-
-        saveData();
-        alert(`Successfully imported ${importedCount} tasks from CSV!`);
-      };
-      reader.readAsText(file);
-    }
-
-    // INITIAL STARTUP
-    renderApp();
-  </script>
-</body>
-</html>
+            <tbody class="divide-y divide-slate-70
