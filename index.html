@@ -583,10 +583,11 @@
       container.innerHTML = html;
     }
 
-    // 3. ANALYTICS VIEW WITH CHART DATA LABELS
+    // 3. ANALYTICS VIEW WITH PIE & DOUGHNUT CHARTS RESTORED
     function renderAnalytics(container) {
-      const total = tasks.length;
-      const avgProgress = total > 0 ? Math.round(tasks.reduce((sum, t) => sum + getProgressByStatus(t.status), 0) / total) : 0;
+      const filtered = getFilteredTasks();
+      const total = filtered.length;
+      const avgProgress = total > 0 ? Math.round(filtered.reduce((sum, t) => sum + getProgressByStatus(t.status), 0) / total) : 0;
 
       container.innerHTML = `
         <div class="space-y-6">
@@ -594,7 +595,7 @@
             <div class="flex justify-between items-center mb-3">
               <div>
                 <h3 class="text-lg font-bold text-white">Overall Dashboard Completion</h3>
-                <p class="text-xs text-slate-400">Weighted average based on status thresholds</p>
+                <p class="text-xs text-slate-400">Weighted average based on active filter dataset</p>
               </div>
               <span class="text-3xl font-black text-blue-400">${avgProgress}%</span>
             </div>
@@ -603,24 +604,93 @@
             </div>
           </div>
 
+          <!-- ROW 1: RESTORED PIE & DOUGHNUT CHARTS -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl">
+              <h4 class="text-xs font-bold text-slate-300 uppercase mb-4">Status Distribution (Pie Chart)</h4>
+              <div class="relative h-64"><canvas id="statusPieChart"></canvas></div>
+            </div>
+
+            <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl">
+              <h4 class="text-xs font-bold text-slate-300 uppercase mb-4">Priority Breakdown (Doughnut Chart)</h4>
+              <div class="relative h-64"><canvas id="priorityDoughnutChart"></canvas></div>
+            </div>
+          </div>
+
+          <!-- ROW 2: DURATION & TAT BAR CHARTS -->
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl">
               <h4 class="text-xs font-bold text-slate-300 uppercase mb-4">Task Duration (Start to End Date)</h4>
-              <div class="relative h-72"><canvas id="durationChart"></canvas></div>
+              <div class="relative h-64"><canvas id="durationChart"></canvas></div>
             </div>
 
             <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl">
               <h4 class="text-xs font-bold text-slate-300 uppercase mb-4">Average Turn-Around Time (TAT) by Assignee</h4>
-              <div class="relative h-72"><canvas id="tatChart"></canvas></div>
+              <div class="relative h-64"><canvas id="tatChart"></canvas></div>
             </div>
           </div>
         </div>
       `;
 
       setTimeout(() => {
-        // Duration Chart
-        const durationTasks = tasks.filter(t => t.startDate && t.endDate).slice(0, 8);
-        const durationLabels = durationTasks.map(t => `#${t.id} ${t.title.substring(0, 15)}...`);
+        // 1. RESTORED STATUS PIE CHART
+        const statusCounts = STATUSES.map(s => filtered.filter(t => t.status === s).length);
+        new Chart(document.getElementById('statusPieChart'), {
+          type: 'pie',
+          data: {
+            labels: STATUSES,
+            datasets: [{
+              data: statusCounts,
+              backgroundColor: ['#64748b', '#3b82f6', '#a855f7', '#10b981'],
+              borderWidth: 2,
+              borderColor: '#1e293b'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              datalabels: {
+                color: '#ffffff',
+                font: { weight: 'bold', size: 12 },
+                formatter: (value) => value > 0 ? value : ''
+              },
+              legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 11 } } }
+            }
+          }
+        });
+
+        // 2. RESTORED PRIORITY DOUGHNUT CHART
+        const priorities = ['Low', 'Medium', 'High', 'Urgent'];
+        const priorityCounts = priorities.map(p => filtered.filter(t => t.priority === p).length);
+        new Chart(document.getElementById('priorityDoughnutChart'), {
+          type: 'doughnut',
+          data: {
+            labels: priorities,
+            datasets: [{
+              data: priorityCounts,
+              backgroundColor: ['#475569', '#3b82f6', '#f59e0b', '#ef4444'],
+              borderWidth: 2,
+              borderColor: '#1e293b'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              datalabels: {
+                color: '#ffffff',
+                font: { weight: 'bold', size: 12 },
+                formatter: (value) => value > 0 ? value : ''
+              },
+              legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 11 } } }
+            }
+          }
+        });
+
+        // 3. DURATION BAR CHART
+        const durationTasks = filtered.filter(t => t.startDate && t.endDate).slice(0, 8);
+        const durationLabels = durationTasks.map(t => `#${t.id} ${t.title.substring(0, 12)}...`);
         const durationData = durationTasks.map(t => {
           const diff = new Date(t.endDate) - new Date(t.startDate);
           return Math.max(1, Math.round(diff / (1000 * 60 * 60 * 24)));
@@ -648,9 +718,9 @@
           }
         });
 
-        // TAT Chart
+        // 4. TAT BAR CHART
         const tatData = customAssignees.map(a => {
-          const aTasks = tasks.filter(t => t.assignee === a && t.startDate && t.endDate);
+          const aTasks = filtered.filter(t => t.assignee === a && t.startDate && t.endDate);
           if (aTasks.length === 0) return 0;
           const totalDays = aTasks.reduce((sum, t) => sum + Math.max(1, Math.round((new Date(t.endDate) - new Date(t.startDate)) / (1000 * 60 * 60 * 24))), 0);
           return Math.round(totalDays / aTasks.length);
@@ -888,7 +958,6 @@
             return;
           }
 
-          // Restore Tasks (Smart ID Merge)
           let updatedCount = 0;
           let createdCount = 0;
 
@@ -903,21 +972,18 @@
             }
           });
 
-          // Merge Assignees
           if (Array.isArray(importedDb.customAssignees)) {
             importedDb.customAssignees.forEach(a => {
               if (!customAssignees.includes(a)) customAssignees.push(a);
             });
           }
 
-          // Merge Groups
           if (Array.isArray(importedDb.customGroups)) {
             importedDb.customGroups.forEach(g => {
               if (!customGroups.includes(g)) customGroups.push(g);
             });
           }
 
-          // Restore Slicer Config
           if (importedDb.slicerConfig) {
             slicerConfig = { ...slicerConfig, ...importedDb.slicerConfig };
             localStorage.setItem('team_tasks_slicers_v2', JSON.stringify(slicerConfig));
