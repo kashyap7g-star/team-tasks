@@ -4,107 +4,85 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Team Task Manager Dashboard</title>
-  <!-- Tailwind CSS CDN -->
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Modal active state visibility */
-    .modal-backdrop {
-      display: none;
-    }
-    .modal-backdrop.active {
-      display: flex !important;
-    }
-    /* Custom scrollbar for Kanban board columns */
-    .kanban-col-scroll::-webkit-scrollbar {
-      width: 4px;
-    }
-    .kanban-col-scroll::-webkit-scrollbar-track {
-      background: rgba(15, 23, 42, 0.6);
-    }
-    .kanban-col-scroll::-webkit-scrollbar-thumb {
-      background: rgba(51, 65, 85, 0.8);
-      border-radius: 4px;
-    }
+    .modal-active { display: flex !important; }
   </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased selection:bg-blue-600 selection:text-white">
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
 
-  <!-- Main Application Wrapper -->
-  <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-    
+  <div class="max-w-7xl mx-auto p-4 sm:p-6">
+    <!-- Header -->
     <header class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-slate-800">
       <div>
-        <div class="flex items-center gap-3">
-          <div class="bg-blue-600 p-2.5 rounded-xl text-white shadow-lg shadow-blue-500/20">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 002-2h2a2 2 0 002 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-            </svg>
-          </div>
-          <div>
-            <h1 class="text-2xl font-bold text-white tracking-tight">Team Task Manager</h1>
-            <p class="text-xs text-slate-400 mt-0.5">Interactive Multi-View Dashboard & Departmental Tracking</p>
-          </div>
-        </div>
+        <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+          <span>📋</span> Team Task Manager
+        </h1>
+        <p class="text-slate-400 text-sm mt-1">Collaborative dashboard with multi-view tracking & department analytics</p>
       </div>
 
-      <!-- Action Buttons Bar -->
-      <div class="flex flex-wrap items-center gap-2.5">
-        <label class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center gap-2">
-          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-          </svg>
-          <span>Import CSV</span>
+      <!-- Actions -->
+      <div class="flex flex-wrap items-center gap-3">
+        <label class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition flex items-center gap-2">
+          <span>📥</span> Import CSV
           <input type="file" id="csvFileInput" accept=".csv" onchange="importCSV(event)" class="hidden" />
         </label>
-
-        <button onclick="exportCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2">
-          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-          </svg>
-          <span>Export Filtered (CSV)</span>
+        <button onclick="exportCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
+          <span>📤</span> Export Filtered List (Excel)
         </button>
-
-        <button onclick="resetToDefaults()" class="bg-slate-800/80 hover:bg-slate-700/80 text-rose-400 border border-rose-900/40 px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5" title="Reset dataset to default sample tasks">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-          </svg>
-          <span>Reset Sample</span>
-        </button>
-
-        <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shadow-lg shadow-blue-500/25">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
-          </svg>
-          <span>New Task</span>
+        <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 shadow-lg shadow-blue-500/20">
+          <span>+</span> New Task
         </button>
       </div>
     </header>
 
-    <div class="my-6 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-slate-800/60 p-4 rounded-2xl border border-slate-800 shadow-sm">
+    <!-- Controls Row: Slicers & View Switcher -->
+    <div class="my-6 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-slate-800/60 p-4 rounded-xl border border-slate-800">
       
-      <!-- View Navigation Switcher -->
-      <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-700/60 self-start md:self-auto overflow-x-auto max-w-full">
-        <button onclick="switchView('kanban')" id="tab-kanban" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition-all bg-blue-600 text-white shadow-sm">
+      <!-- View Switcher -->
+      <div class="flex bg-slate-900 p-1 rounded-lg border border-slate-700/60 self-start md:self-auto">
+        <button onclick="switchView('kanban')" id="tab-kanban" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition bg-blue-600 text-white">
           Kanban Board
         </button>
-        <button onclick="switchView('table')" id="tab-table" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-slate-200">
+        <button onclick="switchView('table')" id="tab-table" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition text-slate-400 hover:text-slate-200">
           Table View
         </button>
-        <button onclick="switchView('grouped')" id="tab-grouped" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-slate-200">
+        <button onclick="switchView('grouped')" id="tab-grouped" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition text-slate-400 hover:text-slate-200">
           Grouped View
         </button>
-        <button onclick="switchView('analytics')" id="tab-analytics" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-slate-200">
+        <button onclick="switchView('analytics')" id="tab-analytics" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition text-slate-400 hover:text-slate-200">
           Analytics
         </button>
       </div>
 
-      <!-- Filters / Slicers Toolbar -->
+      <!-- Slicers -->
       <div class="flex flex-wrap items-center gap-3">
-        
+        <!-- Assignee Slicer -->
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs text-slate-400 font-medium">Assignee:</span>
+          <select id="filterAssignee" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
+            <option value="All">All Assignees</option>
+            <option value="Kashyap">Kashyap</option>
+            <option value="Melisa">Melisa</option>
+            <option value="Albus">Albus</option>
+            <option value="Brooke">Brooke</option>
+          </select>
+        </div>
+
+        <!-- Year-Month Slicer -->
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs text-slate-400 font-medium">Year-Month:</span>
+          <select id="filterYearMonth" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
+            <option value="All">All Months</option>
+            <!-- Populated dynamically via JS -->
+          </select>
+        </div>
+
         <!-- Status Slicer -->
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5">
           <span class="text-xs text-slate-400 font-medium">Status:</span>
-          <select id="filterStatus" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs font-semibold rounded-xl px-3 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors">
+          <select id="filterStatus" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
             <option value="All">All Statuses</option>
             <option value="Not Started">Not Started</option>
             <option value="In Progress">In Progress</option>
@@ -114,9 +92,9 @@
         </div>
 
         <!-- Task Group Slicer -->
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-slate-400 font-medium">Task Group:</span>
-          <select id="filterGroup" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs font-semibold rounded-xl px-3 py-1.5 text-indigo-300 focus:outline-none focus:border-indigo-500 transition-colors">
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs text-slate-400 font-medium">Group:</span>
+          <select id="filterGroup" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
             <option value="All">All Groups</option>
             <option value="HR">HR</option>
             <option value="Finance">Finance</option>
@@ -129,9 +107,9 @@
         </div>
 
         <!-- Priority Slicer -->
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5">
           <span class="text-xs text-slate-400 font-medium">Priority:</span>
-          <select id="filterPriority" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs font-semibold rounded-xl px-3 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors">
+          <select id="filterPriority" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
             <option value="All">All Priorities</option>
             <option value="Low">Low</option>
             <option value="Medium">Medium</option>
@@ -139,45 +117,33 @@
             <option value="Urgent">Urgent</option>
           </select>
         </div>
-
-        <!-- Filter Count Badge -->
-        <div id="filterCountBadge" class="hidden text-[10px] font-bold px-2 py-1 rounded-lg bg-blue-950 text-blue-300 border border-blue-800">
-          Filtered
-        </div>
-
       </div>
     </div>
 
-    <main id="viewContainer" class="min-h-[400px]">
-      <!-- Views dynamically rendered via JS -->
-    </main>
-
+    <!-- MAIN VIEW CONTAINER -->
+    <main id="viewContainer"></main>
   </div>
 
-  <div id="taskModal" class="modal-backdrop fixed inset-0 bg-slate-950/80 backdrop-blur-sm items-center justify-center p-4 z-50">
-    <div class="bg-slate-800 border border-slate-700 w-full max-w-lg rounded-2xl p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-      
-      <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-700/60">
-        <h3 id="modalHeading" class="text-base font-bold text-white">Create New Task</h3>
-        <button onclick="closeModal()" class="text-slate-400 hover:text-white p-1 rounded-lg transition-colors">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
+  <!-- CREATE / EDIT TASK MODAL -->
+  <div id="taskModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-800 border border-slate-700 w-full max-w-lg rounded-xl p-6 shadow-2xl">
+      <div class="flex justify-between items-center mb-5">
+        <h3 id="modalHeading" class="text-lg font-bold text-white">Create New Task</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
       </div>
       
       <form onsubmit="handleSaveTask(event)" class="space-y-4">
         <input type="hidden" id="mTaskId" value="" />
         
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Task Title *</label>
-          <input type="text" id="mTitle" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-blue-500 transition-colors" placeholder="e.g. Conduct Q4 Financial Audit" />
+          <label class="block text-xs font-medium text-slate-300 mb-1">Task Title *</label>
+          <input type="text" id="mTitle" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" placeholder="e.g. Prepare Q3 Balance Sheet" />
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-semibold text-indigo-300 mb-1">Task Group / Dept *</label>
-            <select id="mGroup" class="w-full bg-indigo-950/40 border border-indigo-900/80 text-indigo-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-indigo-500">
+            <label class="block text-xs font-medium text-slate-300 mb-1">Task Group / Dept *</label>
+            <select id="mGroup" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
               <option value="HR">HR</option>
               <option value="Finance">Finance</option>
               <option value="IT">IT</option>
@@ -188,15 +154,20 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Assignee</label>
-            <input type="text" id="mAssignee" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-blue-500" placeholder="e.g. Sarah Jenkins" />
+            <label class="block text-xs font-medium text-slate-300 mb-1">Assignee *</label>
+            <select id="mAssignee" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+              <option value="Kashyap">Kashyap</option>
+              <option value="Melisa">Melisa</option>
+              <option value="Albus">Albus</option>
+              <option value="Brooke">Brooke</option>
+            </select>
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Status</label>
-            <select id="mStatus" onchange="syncStatusWithProgress()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
+            <label class="block text-xs font-medium text-slate-300 mb-1">Status</label>
+            <select id="mStatus" onchange="syncStatusWithProgress()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
               <option value="Not Started">Not Started</option>
               <option value="In Progress">In Progress</option>
               <option value="Under Review">Under Review</option>
@@ -204,8 +175,8 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Priority</label>
-            <select id="mPriority" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
+            <label class="block text-xs font-medium text-slate-300 mb-1">Priority</label>
+            <select id="mPriority" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
               <option value="Low">Low</option>
               <option value="Medium" selected>Medium</option>
               <option value="High">High</option>
@@ -214,155 +185,144 @@
           </div>
         </div>
 
-        <!-- Completion Percentage Slider -->
-        <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-700/60">
-          <div class="flex justify-between items-center mb-1.5">
-            <label class="text-xs font-semibold text-slate-300">Completion Progress (%)</label>
-            <span id="mProgressVal" class="text-xs font-mono font-bold text-blue-400">0%</span>
+        <!-- Completion Progress Slider -->
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="text-xs font-medium text-slate-300">Completion Progress (%)</label>
+            <span id="mProgressVal" class="text-xs font-bold text-blue-400">0%</span>
           </div>
-          <input 
-            type="range" 
-            id="mProgress" 
-            min="0" 
-            max="100" 
-            value="0" 
-            step="5" 
-            oninput="updateProgressDisplay(this.value)" 
-            class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500" 
-          />
+          <input type="range" id="mProgress" min="0" max="100" value="0" step="5" oninput="updateProgressVal(this.value)" class="w-full h-2 bg-slate-900 rounded-lg appearance-none cursor-pointer accent-blue-500" />
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Start Date</label>
-            <input type="date" id="mStartDate" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500" />
+            <label class="block text-xs font-medium text-slate-300 mb-1">Start Date</label>
+            <input type="date" id="mStartDate" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">End Date</label>
-            <input type="date" id="mEndDate" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500" />
+            <label class="block text-xs font-medium text-slate-300 mb-1">End Date (Sets Year-Month)</label>
+            <input type="date" id="mEndDate" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
           </div>
         </div>
 
-        <div class="flex justify-end gap-3 pt-4 border-t border-slate-700/60">
-          <button type="button" onclick="closeModal()" class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors">Cancel</button>
-          <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-xs font-semibold transition-all shadow-md shadow-blue-500/20">Save Task</button>
+        <!-- Task Comment (250 chars) -->
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="block text-xs font-medium text-slate-300">Task Comment / Note (Max 250 chars)</label>
+            <span id="charCount" class="text-[10px] text-slate-400">250 left</span>
+          </div>
+          <textarea id="mComment" maxlength="250" oninput="updateCharCount(this.value)" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" placeholder="Add handover note or context for the team..."></textarea>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-slate-700">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white">Cancel</button>
+          <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg text-sm font-semibold transition">Save Task</button>
         </div>
       </form>
-
     </div>
   </div>
 
   <script>
-    // --- SAMPLE DEFAULT DATASET ---
-    const DEFAULT_TASKS = [
-      { id: 101, title: 'Q4 Budget Allocation Review', group: 'Finance', assignee: 'Sarah Jenkins', status: 'In Progress', priority: 'High', progress: 65, startDate: '2026-10-01', endDate: '2026-10-15' },
-      { id: 102, title: 'Employee Onboarding Portal Update', group: 'HR', assignee: 'Alex Rivera', status: 'Not Started', priority: 'Medium', progress: 0, startDate: '2026-10-05', endDate: '2026-10-20' },
-      { id: 103, title: 'API Gateway Router Upgrade', group: 'IT', assignee: 'David Chen', status: 'Under Review', priority: 'Urgent', progress: 85, startDate: '2026-09-25', endDate: '2026-10-12' },
-      { id: 104, title: 'Q4 PR Launch & Brand Refresh', group: 'Marketing', assignee: 'Emma Watson', status: 'Completed', priority: 'High', progress: 100, startDate: '2026-09-15', endDate: '2026-10-01' },
-      { id: 105, title: 'Vendor SLA Contract Renewal', group: 'Legal', assignee: 'Michael Brown', status: 'In Progress', priority: 'Low', progress: 35, startDate: '2026-10-08', endDate: '2026-10-25' },
-      { id: 106, title: 'Fulfillment Logistics Optimization', group: 'Operations', assignee: 'Lisa Ray', status: 'Not Started', priority: 'Medium', progress: 0, startDate: '2026-10-12', endDate: '2026-10-30' }
+    let currentView = 'kanban';
+    
+    let defaultData = [
+      { id: 1, title: 'Annual Financial Audit', group: 'Finance', assignee: 'Kashyap', status: 'In Progress', priority: 'High', progress: 60, startDate: '2026-10-01', endDate: '2026-10-15', comment: 'Audit team requested additional ledger statements.' },
+      { id: 2, title: 'Onboard Senior Engineers', group: 'HR', assignee: 'Melisa', status: 'Not Started', priority: 'Medium', progress: 0, startDate: '2026-10-10', endDate: '2026-10-25', comment: 'Waiting for IT to assign work laptops.' },
+      { id: 3, title: 'Server OS Security Patch', group: 'IT', assignee: 'Albus', status: 'Under Review', priority: 'Urgent', progress: 85, startDate: '2026-10-05', endDate: '2026-10-09', comment: 'Patches deployed to staging environment.' },
+      { id: 4, title: 'Q4 Marketing Strategy', group: 'Marketing', assignee: 'Brooke', status: 'Completed', priority: 'High', progress: 100, startDate: '2026-09-15', endDate: '2026-10-01', comment: 'Approved by leadership team.' }
     ];
 
-    const STATUSES = ['Not Started', 'In Progress', 'Under Review', 'Completed'];
-    const GROUPS = ['HR', 'Finance', 'IT', 'Marketing', 'Operations', 'Sales', 'Legal'];
-
-    // STATE VARIABLES
-    let currentView = 'kanban';
     let tasks = [];
-
-    // --- SELF-HEALING LOCAL STORAGE INITIALIZATION ---
-    function initData() {
-      const STORAGE_KEY = 'team_tasks_master_v4';
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            tasks = parsed.map(sanitizeTask);
-          } else {
-            tasks = JSON.parse(JSON.stringify(DEFAULT_TASKS));
-          }
-        } else {
-          tasks = JSON.parse(JSON.stringify(DEFAULT_TASKS));
-        }
-      } catch (e) {
-        console.warn('LocalStorage error or corrupt data. Resetting to defaults.', e);
-        tasks = JSON.parse(JSON.stringify(DEFAULT_TASKS));
+    try {
+      let saved = JSON.parse(localStorage.getItem('team_tasks_v4'));
+      if (Array.isArray(saved) && saved.length > 0) {
+        tasks = saved.map(t => ({
+          id: t.id || Date.now() + Math.random(),
+          title: t.title || 'Untitled Task',
+          group: t.group || 'HR',
+          assignee: t.assignee || 'Kashyap',
+          status: t.status || 'Not Started',
+          priority: t.priority || 'Medium',
+          progress: typeof t.progress === 'number' ? t.progress : (t.status === 'Completed' ? 100 : 0),
+          startDate: t.startDate || '',
+          endDate: t.endDate || '',
+          comment: t.comment || ''
+        }));
+      } else {
+        tasks = defaultData;
       }
-      saveData();
+    } catch (e) {
+      tasks = defaultData;
     }
 
-    function sanitizeTask(t) {
-      return {
-        id: t.id || (Date.now() + Math.random()),
-        title: t.title || 'Untitled Task',
-        group: GROUPS.includes(t.group) ? t.group : 'HR',
-        assignee: t.assignee || 'Unassigned',
-        status: STATUSES.includes(t.status) ? t.status : 'Not Started',
-        priority: ['Low', 'Medium', 'High', 'Urgent'].includes(t.priority) ? t.priority : 'Medium',
-        progress: typeof t.progress === 'number' ? Math.max(0, Math.min(100, t.progress)) : (t.status === 'Completed' ? 100 : 0),
-        startDate: t.startDate || '',
-        endDate: t.endDate || ''
-      };
+    const STATUSES = ['Not Started', 'In Progress', 'Under Review', 'Completed'];
+
+    function getYearMonth(endDateStr) {
+      if (!endDateStr) return 'Unscheduled';
+      return endDateStr.substring(0, 7); // Extracts YYYY-MM
+    }
+
+    function populateYearMonthSlicer() {
+      const select = document.getElementById('filterYearMonth');
+      const currentVal = select.value;
+      select.innerHTML = '<option value="All">All Months</option>';
+
+      const ymSet = new Set();
+      tasks.forEach(t => {
+        if (t.endDate) ymSet.add(getYearMonth(t.endDate));
+      });
+
+      Array.from(ymSet).sort().reverse().forEach(ym => {
+        select.innerHTML += `<option value="${ym}">${ym}</option>`;
+      });
+
+      select.value = currentVal;
     }
 
     function saveData() {
-      localStorage.setItem('team_tasks_master_v4', JSON.stringify(tasks));
+      localStorage.setItem('team_tasks_v4', JSON.stringify(tasks));
+      populateYearMonthSlicer();
       renderApp();
     }
 
-    function resetToDefaults() {
-      if (confirm("Reset task list back to initial sample dataset?")) {
-        tasks = JSON.parse(JSON.stringify(DEFAULT_TASKS));
-        saveData();
-      }
-    }
-
-    // --- VIEW NAVIGATION ---
     function switchView(view) {
       currentView = view;
       document.querySelectorAll('.view-btn').forEach(btn => {
-        btn.className = 'view-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-slate-200';
+        btn.className = 'view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition text-slate-400 hover:text-slate-200';
       });
-      const activeBtn = document.getElementById('tab-' + view);
-      if (activeBtn) {
-        activeBtn.className = 'view-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition-all bg-blue-600 text-white shadow-sm';
-      }
+      document.getElementById('tab-' + view).className = 'view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition bg-blue-600 text-white';
       renderApp();
     }
 
-    // --- FILTERING & SLICING ---
     function getFilteredTasks() {
+      const a = document.getElementById('filterAssignee').value;
+      const ym = document.getElementById('filterYearMonth').value;
       const s = document.getElementById('filterStatus').value;
       const g = document.getElementById('filterGroup').value;
       const p = document.getElementById('filterPriority').value;
-      
-      const badge = document.getElementById('filterCountBadge');
-      if (s !== 'All' || g !== 'All' || p !== 'All') {
-        badge.classList.remove('hidden');
-      } else {
-        badge.classList.add('hidden');
-      }
 
-      return tasks.filter(t => 
-        (s === 'All' || t.status === s) &&
-        (g === 'All' || t.group === g) &&
-        (p === 'All' || t.priority === p)
-      );
+      return tasks.filter(t => {
+        const matchA = (a === 'All' || t.assignee === a);
+        const matchYM = (ym === 'All' || getYearMonth(t.endDate) === ym);
+        const matchS = (s === 'All' || t.status === s);
+        const matchG = (g === 'All' || t.group === g);
+        const matchP = (p === 'All' || t.priority === p);
+        return matchA && matchYM && matchS && matchG && matchP;
+      });
     }
 
-    // --- MAIN RENDER ROUTER ---
     function renderApp() {
       const container = document.getElementById('viewContainer');
       const filtered = getFilteredTasks();
 
-      if (currentView === 'kanban') renderKanbanView(container, filtered);
-      else if (currentView === 'table') renderTableView(container, filtered);
-      else if (currentView === 'grouped') renderGroupedView(container, filtered);
-      else if (currentView === 'analytics') renderAnalyticsView(container);
+      if (currentView === 'kanban') renderKanban(container, filtered);
+      else if (currentView === 'table') renderTable(container, filtered);
+      else if (currentView === 'grouped') renderGrouped(container, filtered);
+      else if (currentView === 'analytics') renderAnalytics(container);
     }
 
-    function renderKanbanView(container, filtered) {
+    // 1. KANBAN BOARD
+    function renderKanban(container, filtered) {
       let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">';
       
       STATUSES.forEach(status => {
@@ -371,50 +331,54 @@
         let cardsHTML = '';
         colTasks.forEach(t => {
           cardsHTML += `
-            <div class="bg-slate-800 border border-slate-700/80 hover:border-slate-600 rounded-xl p-3.5 space-y-3 shadow-sm transition-all group">
-              
-              <div class="flex justify-between items-center gap-2">
-                <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-purple-950/60 text-purple-300 border border-purple-800/50 uppercase tracking-wider">${t.group}</span>
-                <span class="px-2 py-0.5 text-[10px] font-bold rounded-md ${getPriorityBadge(t.priority)}">${t.priority}</span>
+            <div class="bg-slate-800 border border-slate-700 rounded-lg p-3.5 space-y-2.5 shadow-sm hover:border-slate-600 transition">
+              <div class="flex justify-between items-center">
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-purple-900/60 text-purple-300 border border-purple-700/50">${t.group}</span>
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded ${getPriorityStyle(t.priority)}">${t.priority}</span>
               </div>
               
-              <h4 class="font-semibold text-xs text-white leading-snug">${escapeHTML(t.title)}</h4>
+              <h4 class="font-semibold text-sm text-white">${t.title}</h4>
+
+              ${t.comment ? `<p class="text-xs bg-slate-900/80 text-slate-300 p-2 rounded border border-slate-700/50 italic">💬 "\${t.comment}"</p>` : ''}
               
               <!-- Progress Bar -->
               <div class="space-y-1">
                 <div class="flex justify-between text-[10px] text-slate-400 font-medium">
                   <span>Progress</span>
-                  <span class="text-blue-400 font-bold">${t.progress}%</span>
+                  <span class="text-blue-400 font-bold">${t.progress || 0}%</span>
                 </div>
-                <div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden border border-slate-700/80">
-                  <div class="bg-blue-500 h-full rounded-full transition-all duration-300" style="width: ${t.progress}%"></div>
+                <div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden border border-slate-700">
+                  <div class="bg-blue-500 h-full transition-all duration-300" style="width: ${t.progress || 0}%"></div>
                 </div>
               </div>
 
-              <!-- Footer Actions -->
-              <div class="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-700/60">
-                <span class="truncate max-w-[110px]" title="${escapeHTML(t.assignee)}">👤 ${escapeHTML(t.assignee)}</span>
+              <div class="flex items-center justify-between text-xs text-slate-400 pt-1 border-t border-slate-700/60">
+                <span>👤 <strong class="text-slate-200">${t.assignee}</strong></span>
                 <div class="flex items-center gap-2">
-                  <button onclick="editTask(${t.id})" class="text-xs text-blue-400 hover:text-blue-300 font-semibold transition-colors">Edit</button>
-                  <button onclick="deleteTask(${t.id})" class="text-xs text-red-400 hover:text-red-300 font-semibold transition-colors">Delete</button>
+                  <button onclick="editTask(${t.id})" class="text-blue-400 hover:text-blue-300 font-bold">Edit</button>
+                  <button onclick="deleteTask(${t.id})" class="text-red-400 hover:text-red-300 font-bold">✕</button>
                 </div>
               </div>
+
+              <div class="text-[10px] text-slate-400 flex justify-between">
+                <span>📅 Due: ${t.endDate || 'N/A'}</span>
+                <span class="text-purple-300 font-semibold">${getYearMonth(t.endDate)}</span>
+              </div>
               
-              <!-- Inline Move Dropdown -->
-              <select onchange="updateStatus(${t.id}, this.value)" class="w-full bg-slate-900 border border-slate-700 text-[11px] font-medium rounded-lg px-2 py-1 text-slate-300 focus:outline-none focus:border-blue-500 cursor-pointer">
-                ${STATUSES.map(s => `<option value="${s}" ${s === t.status ? 'selected' : ''}>Move: ${s}</option>`).join('')}
+              <select onchange="updateStatus(${t.id}, this.value)" class="w-full bg-slate-900 border border-slate-700 text-xs rounded px-2 py-1 text-slate-300 focus:outline-none">
+                ${STATUSES.map(s => `<option value="\${s}" ${s === t.status ? 'selected' : ''}>Move: ${s}</option>`).join('')}
               </select>
             </div>
           `;
         });
 
         html += `
-          <div class="bg-slate-800/40 border border-slate-800 rounded-2xl p-3.5 flex flex-col min-h-[480px]">
+          <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-3 flex flex-col min-h-[450px]">
             <div class="flex items-center justify-between pb-3 border-b border-slate-700/60 mb-3">
-              <span class="font-bold text-xs text-slate-300 uppercase tracking-wider">${status}</span>
+              <h3 class="font-bold text-xs text-slate-300 uppercase tracking-wider">${status}</h3>
               <span class="bg-slate-700 text-slate-200 text-xs px-2 py-0.5 rounded-full font-bold">${colTasks.length}</span>
             </div>
-            <div class="space-y-3 flex-1 overflow-y-auto kanban-col-scroll pr-0.5">${cardsHTML || '<p class="text-xs text-slate-500 italic text-center pt-10">No tasks in this stage</p>'}</div>
+            <div class="space-y-3 flex-1">${cardsHTML || '<p class="text-xs text-slate-500 italic text-center pt-8">No tasks</p>'}</div>
           </div>
         `;
       });
@@ -423,26 +387,31 @@
       container.innerHTML = html;
     }
 
-    function renderTableView(container, filtered) {
+    // 2. TABLE VIEW
+    function renderTable(container, filtered) {
       let rows = '';
       filtered.forEach(t => {
         rows += `
-          <tr class="hover:bg-slate-700/30 transition-colors">
-            <td class="p-3.5 font-medium text-white text-xs max-w-xs">${escapeHTML(t.title)}</td>
-            <td class="p-3.5"><span class="px-2 py-0.5 text-[10px] rounded-md bg-purple-950/60 text-purple-300 border border-purple-800/50 font-bold">${t.group}</span></td>
-            <td class="p-3.5 text-xs text-slate-300">${escapeHTML(t.assignee)}</td>
-            <td class="p-3.5"><span class="px-2 py-0.5 text-[10px] font-bold rounded-md ${getPriorityBadge(t.priority)}">${t.priority}</span></td>
+          <tr class="hover:bg-slate-700/30 transition">
+            <td class="p-3.5 font-medium text-white">
+              <div>${t.title}</div>
+              ${t.comment ? `<div class="text-xs text-slate-400 italic mt-0.5">💬 \${t.comment}</div>` : ''}
+            </td>
+            <td class="p-3.5"><span class="px-2 py-0.5 text-xs rounded bg-purple-900/50 text-purple-300 border border-purple-700/50 font-medium">${t.group}</span></td>
+            <td class="p-3.5 text-slate-200 font-semibold">${t.assignee}</td>
+            <td class="p-3.5"><span class="px-2 py-0.5 text-xs rounded ${getPriorityStyle(t.priority)}">${t.priority}</span></td>
+            <td class="p-3.5 text-xs text-purple-300 font-medium">${getYearMonth(t.endDate)}</td>
             <td class="p-3.5">
               <div class="flex items-center gap-2">
-                <div class="w-16 bg-slate-900 h-1.5 rounded-full overflow-hidden border border-slate-700">
-                  <div class="bg-blue-500 h-full" style="width: ${t.progress}%"></div>
+                <div class="w-14 bg-slate-900 h-1.5 rounded-full overflow-hidden border border-slate-700">
+                  <div class="bg-blue-500 h-full" style="width: ${t.progress || 0}%"></div>
                 </div>
-                <span class="text-xs text-slate-300 font-bold font-mono">${t.progress}%</span>
+                <span class="text-xs text-slate-300 font-bold">${t.progress || 0}%</span>
               </div>
             </td>
             <td class="p-3.5">
-              <select onchange="updateStatus(${t.id}, this.value)" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2 py-1 text-slate-200 font-medium focus:outline-none">
-                ${STATUSES.map(s => `<option value="${s}" ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}
+              <select onchange="updateStatus(${t.id}, this.value)" class="bg-slate-900 border border-slate-700 text-xs rounded px-2 py-1 text-slate-200">
+                ${STATUSES.map(s => `<option value="\${s}" ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}
               </select>
             </td>
             <td class="p-3.5">
@@ -456,70 +425,64 @@
       });
 
       container.innerHTML = `
-        <div class="bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 shadow-xl">
-          <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse min-w-[700px]">
-              <thead>
-                <tr class="bg-slate-900/80 text-slate-400 text-[11px] uppercase tracking-wider font-semibold border-b border-slate-700">
-                  <th class="p-3.5">Task Title</th>
-                  <th class="p-3.5">Task Group</th>
-                  <th class="p-3.5">Assignee</th>
-                  <th class="p-3.5">Priority</th>
-                  <th class="p-3.5">Progress</th>
-                  <th class="p-3.5">Status</th>
-                  <th class="p-3.5">Actions</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-700/50">
-                ${rows || '<tr><td colspan="7" class="p-8 text-center text-slate-500 text-xs">No matching tasks found for active filters.</td></tr>'}
-              </tbody>
-            </table>
-          </div>
+        <div class="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 shadow-xl">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-900/80 text-slate-400 text-xs uppercase border-b border-slate-700">
+                <th class="p-3.5">Task Title & Comment</th>
+                <th class="p-3.5">Group</th>
+                <th class="p-3.5">Assignee</th>
+                <th class="p-3.5">Priority</th>
+                <th class="p-3.5">Year-Month</th>
+                <th class="p-3.5">Progress</th>
+                <th class="p-3.5">Status</th>
+                <th class="p-3.5">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700/50 text-sm">
+              ${rows || '<tr><td colspan="8" class="p-6 text-center text-slate-500">No matching tasks found.</td></tr>'}
+            </tbody>
+          </table>
         </div>
       `;
     }
 
-    function renderGroupedView(container, filtered) {
+    // 3. GROUPED VIEW
+    function renderGrouped(container, filtered) {
+      const groups = ['HR', 'Finance', 'IT', 'Marketing', 'Operations', 'Sales', 'Legal'];
       let html = '<div class="space-y-6">';
 
-      GROUPS.forEach(g => {
+      groups.forEach(g => {
         const groupTasks = filtered.filter(t => t.group === g);
         if (groupTasks.length === 0) return;
 
         let cards = '';
         groupTasks.forEach(t => {
           cards += `
-            <div class="bg-slate-900 p-3.5 rounded-xl border border-slate-700/60 flex flex-col justify-between gap-3 shadow-sm">
-              <div class="flex justify-between items-start gap-2">
-                <h4 class="font-semibold text-xs text-white leading-snug">${escapeHTML(t.title)}</h4>
-                <button onclick="editTask(${t.id})" class="text-xs text-blue-400 hover:text-blue-300 font-semibold shrink-0">Edit</button>
-              </div>
-              
-              <div class="space-y-1">
-                <div class="flex justify-between text-[10px] text-slate-400 font-medium">
-                  <span>Progress</span>
-                  <span class="text-purple-300 font-bold">${t.progress}%</span>
-                </div>
-                <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-800">
-                  <div class="bg-purple-500 h-full" style="width: ${t.progress}%"></div>
-                </div>
+            <div class="bg-slate-900 p-3.5 rounded-lg border border-slate-700/60 flex flex-col justify-between gap-2">
+              <div class="flex justify-between items-start">
+                <div class="font-semibold text-sm text-white">${t.title}</div>
+                <button onclick="editTask(${t.id})" class="text-xs text-blue-400 hover:text-blue-300">Edit</button>
               </div>
 
-              <div class="flex items-center justify-between text-xs text-slate-400 pt-1 border-t border-slate-800">
-                <span>👤 ${escapeHTML(t.assignee)}</span>
-                <span class="px-2 py-0.5 text-[10px] font-bold rounded ${getPriorityBadge(t.priority)}">${t.priority}</span>
+              ${t.comment ? `<p class="text-xs text-slate-400 italic">💬 \${t.comment}</p>` : ''}
+              
+              <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-800">
+                <div class="bg-purple-500 h-full" style="width: ${t.progress || 0}%"></div>
+              </div>
+
+              <div class="flex items-center justify-between text-xs text-slate-400">
+                <span>👤 <strong class="text-slate-200">${t.assignee}</strong></span>
+                <span class="px-2 py-0.5 text-[10px] rounded ${getPriorityStyle(t.priority)}">${t.priority}</span>
               </div>
             </div>
           `;
         });
 
         html += `
-          <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 shadow-sm">
+          <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-4">
             <div class="flex items-center justify-between pb-3 border-b border-slate-700 mb-3">
-              <div class="flex items-center gap-2">
-                <span class="text-base">🏢</span>
-                <h3 class="font-bold text-xs uppercase tracking-wider text-purple-300">${g} Department</h3>
-              </div>
+              <h3 class="font-bold text-md text-purple-300">📁 ${g} Department</h3>
               <span class="bg-purple-950/80 text-purple-300 border border-purple-700/50 text-xs px-2.5 py-0.5 rounded-full font-bold">${groupTasks.length} Tasks</span>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">${cards}</div>
@@ -531,24 +494,25 @@
       container.innerHTML = html;
     }
 
-    function renderAnalyticsView(container) {
+    // 4. ANALYTICS VIEW
+    function renderAnalytics(container) {
       const total = tasks.length;
-      const completed = tasks.filter(t => t.status === 'Completed').length;
-      const avgProgress = total > 0 ? Math.round(tasks.reduce((sum, t) => sum + t.progress, 0) / total) : 0;
+      const avgProgress = total > 0 ? Math.round(tasks.reduce((sum, t) => sum + (t.progress || 0), 0) / total) : 0;
+      const assignees = ['Kashyap', 'Melisa', 'Albus', 'Brooke'];
 
-      let groupBars = '';
-      GROUPS.forEach(g => {
-        const gTasks = tasks.filter(t => t.group === g);
-        const gAvg = gTasks.length > 0 ? Math.round(gTasks.reduce((sum, t) => sum + t.progress, 0) / gTasks.length) : 0;
+      let assigneeBars = '';
+      assignees.forEach(a => {
+        const aTasks = tasks.filter(t => t.assignee === a);
+        const aAvg = aTasks.length > 0 ? Math.round(aTasks.reduce((sum, t) => sum + (t.progress || 0), 0) / aTasks.length) : 0;
 
-        groupBars += `
+        assigneeBars += `
           <div>
-            <div class="flex justify-between text-xs font-semibold mb-1.5">
-              <span class="text-slate-200">${g} Department (${gTasks.length} Tasks)</span>
-              <span class="text-purple-300 font-mono font-bold">${gAvg}% Avg Completion</span>
+            <div class="flex justify-between text-xs font-semibold mb-1">
+              <span class="text-slate-200">👤 ${a} (${aTasks.length} Tasks)</span>
+              <span class="text-blue-400">${aAvg}% Avg Completion</span>
             </div>
-            <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-700/60 p-0.5">
-              <div class="bg-purple-500 h-full rounded-full transition-all duration-500" style="width: ${gAvg}%"></div>
+            <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-700/60">
+              <div class="bg-blue-500 h-full rounded-full transition-all duration-300" style="width: ${aAvg}%"></div>
             </div>
           </div>
         `;
@@ -556,102 +520,88 @@
 
       container.innerHTML = `
         <div class="space-y-6">
-          <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-xl">
+            <div class="flex justify-between items-center mb-3">
               <div>
-                <h3 class="text-base font-bold text-white">Overall Team Progress Ratio</h3>
-                <p class="text-xs text-slate-400">Aggregated metric across all active tasks</p>
+                <h3 class="text-lg font-bold text-white">Overall Dashboard Completion</h3>
+                <p class="text-xs text-slate-400">Total task progress metric</p>
               </div>
-              <span class="text-3xl font-black text-blue-400 font-mono">${avgProgress}%</span>
+              <span class="text-3xl font-black text-blue-400">${avgProgress}%</span>
             </div>
             <div class="w-full bg-slate-900 rounded-full h-4 overflow-hidden border border-slate-700 p-0.5">
               <div class="bg-gradient-to-r from-blue-500 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: ${avgProgress}%"></div>
             </div>
-            
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-700/60 text-center">
-              <div><p class="text-[10px] uppercase font-bold text-slate-400">Total Tasks</p><p class="text-xl font-bold text-white mt-1">${total}</p></div>
-              <div><p class="text-[10px] uppercase font-bold text-slate-400">In Progress</p><p class="text-xl font-bold text-amber-400 mt-1">${tasks.filter(t => t.status==='In Progress').length}</p></div>
-              <div><p class="text-[10px] uppercase font-bold text-slate-400">Under Review</p><p class="text-xl font-bold text-purple-400 mt-1">${tasks.filter(t => t.status==='Under Review').length}</p></div>
-              <div><p class="text-[10px] uppercase font-bold text-slate-400">Completed</p><p class="text-xl font-bold text-emerald-400 mt-1">${completed}</p></div>
-            </div>
           </div>
 
-          <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl">
-            <h3 class="text-sm font-bold text-white mb-4">Departmental Workload Completion Rates</h3>
-            <div class="space-y-4">${groupBars}</div>
+          <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-xl">
+            <h3 class="text-md font-bold text-white mb-4">Assignee Workload Breakdown</h3>
+            <div class="space-y-4">${assigneeBars}</div>
           </div>
         </div>
       `;
     }
 
-    // --- HELPER UTILITIES ---
-    function getPriorityBadge(p) {
+    // UTILITIES & HANDLERS
+    function getPriorityStyle(p) {
       if (p === 'Urgent') return 'bg-red-950 text-red-300 border border-red-800/60';
       if (p === 'High') return 'bg-amber-950 text-amber-300 border border-amber-800/60';
       if (p === 'Medium') return 'bg-blue-950 text-blue-300 border border-blue-800/60';
       return 'bg-slate-700 text-slate-300';
     }
 
-    function escapeHTML(str) {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    // --- UPDATE HANDLERS ---
     function updateStatus(id, newStatus) {
       tasks = tasks.map(t => {
         if (t.id === id) {
-          let newProgress = t.progress;
-          if (newStatus === 'Completed') newProgress = 100;
-          else if (newStatus === 'Not Started') newProgress = 0;
-          return { ...t, status: newStatus, progress: newProgress };
+          let newProg = t.progress;
+          if (newStatus === 'Completed') newProg = 100;
+          else if (newStatus === 'Not Started') newProg = 0;
+          return { ...t, status: newStatus, progress: newProg };
         }
         return t;
       });
       saveData();
     }
 
-    function updateProgressDisplay(val) {
+    function updateProgressVal(val) {
       document.getElementById('mProgressVal').innerText = val + '%';
+    }
+
+    function updateCharCount(val) {
+      const left = 250 - val.length;
+      document.getElementById('charCount').innerText = left + ' left';
     }
 
     function syncStatusWithProgress() {
       const st = document.getElementById('mStatus').value;
       if (st === 'Completed') {
         document.getElementById('mProgress').value = 100;
-        updateProgressDisplay(100);
+        updateProgressVal(100);
       } else if (st === 'Not Started') {
         document.getElementById('mProgress').value = 0;
-        updateProgressDisplay(0);
+        updateProgressVal(0);
       }
     }
 
     function deleteTask(id) {
-      if (confirm("Delete this task permanently?")) {
-        tasks = tasks.filter(t => t.id !== id);
-        saveData();
-      }
+      tasks = tasks.filter(t => t.id !== id);
+      saveData();
     }
 
-    // --- MODAL CONTROLS ---
     function openModal() {
       document.getElementById('mTaskId').value = '';
       document.getElementById('modalHeading').innerText = 'Create New Task';
       document.getElementById('mTitle').value = '';
       document.getElementById('mGroup').value = 'HR';
-      document.getElementById('mAssignee').value = '';
+      document.getElementById('mAssignee').value = 'Kashyap';
       document.getElementById('mStatus').value = 'Not Started';
       document.getElementById('mPriority').value = 'Medium';
       document.getElementById('mProgress').value = 0;
-      updateProgressDisplay(0);
+      updateProgressVal(0);
       document.getElementById('mStartDate').value = '';
       document.getElementById('mEndDate').value = '';
-      document.getElementById('taskModal').classList.add('active');
+      document.getElementById('mComment').value = '';
+      updateCharCount('');
+      document.getElementById('taskModal').classList.add('modal-active');
     }
 
     function editTask(id) {
@@ -659,45 +609,45 @@
       if (!t) return;
 
       document.getElementById('mTaskId').value = t.id;
-      document.getElementById('modalHeading').innerText = 'Edit Task Details';
+      document.getElementById('modalHeading').innerText = 'Edit Task';
       document.getElementById('mTitle').value = t.title;
       document.getElementById('mGroup').value = t.group;
       document.getElementById('mAssignee').value = t.assignee;
       document.getElementById('mStatus').value = t.status;
       document.getElementById('mPriority').value = t.priority;
-      document.getElementById('mProgress').value = t.progress;
-      updateProgressDisplay(t.progress);
+      document.getElementById('mProgress').value = t.progress || 0;
+      updateProgressVal(t.progress || 0);
       document.getElementById('mStartDate').value = t.startDate || '';
       document.getElementById('mEndDate').value = t.endDate || '';
-      document.getElementById('taskModal').classList.add('active');
+      document.getElementById('mComment').value = t.comment || '';
+      updateCharCount(t.comment || '');
+      document.getElementById('taskModal').classList.add('modal-active');
     }
 
     function closeModal() {
-      document.getElementById('taskModal').classList.remove('active');
+      document.getElementById('taskModal').classList.remove('modal-active');
     }
 
     function handleSaveTask(e) {
       e.preventDefault();
       const taskId = document.getElementById('mTaskId').value;
-      const title = document.getElementById('mTitle').value.trim();
-      if (!title) return;
-
+      const title = document.getElementById('mTitle').value;
       const group = document.getElementById('mGroup').value;
-      const assignee = document.getElementById('mAssignee').value.trim() || 'Unassigned';
+      const assignee = document.getElementById('mAssignee').value;
       const status = document.getElementById('mStatus').value;
       const priority = document.getElementById('mPriority').value;
       const progress = parseInt(document.getElementById('mProgress').value, 10) || 0;
       const startDate = document.getElementById('mStartDate').value;
       const endDate = document.getElementById('mEndDate').value;
+      const comment = document.getElementById('mComment').value;
 
       if (taskId) {
         tasks = tasks.map(t => t.id == taskId ? {
-          ...t, title, group, assignee, status, priority, progress, startDate, endDate
+          ...t, title, group, assignee, status, priority, progress, startDate, endDate, comment
         } : t);
       } else {
         tasks.unshift({
-          id: Date.now(),
-          title, group, assignee, status, priority, progress, startDate, endDate
+          id: Date.now(), title, group, assignee, status, priority, progress, startDate, endDate, comment
         });
       }
 
@@ -705,74 +655,68 @@
       closeModal();
     }
 
+    // CSV EXPORT (Saves active filter selection to Excel-readable file)
     function exportCSV() {
       const filtered = getFilteredTasks();
       if (filtered.length === 0) {
-        alert("No tasks in the current filtered view to export!");
+        alert("No tasks matching active filters to export!");
         return;
       }
 
-      let csv = "Title,Task Group,Assignee,Status,Priority,Progress_Percent,Start_Date,End_Date\n";
+      let csv = "Title,Group,Assignee,Status,Priority,Progress_Percent,Year_Month,Start_Date,End_Date,Comment\n";
       filtered.forEach(t => {
-        csv += `"${t.title.replace(/"/g, '""')}","${t.group}","${t.assignee.replace(/"/g, '""')}","${t.status}","${t.priority}","${t.progress}","${t.startDate}","${t.endDate}"\n`;
+        csv += `"${t.title.replace(/"/g, '""')}","${t.group}","${t.assignee}","${t.status}","${t.priority}","${t.progress || 0}","${getYearMonth(t.endDate)}","${t.startDate || ''}","${t.endDate || ''}","${(t.comment || '').replace(/"/g, '""')}"\n`;
       });
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.setAttribute('download', `Filtered_Tasks_Export_${new Date().toISOString().slice(0,10)}.csv`);
+      link.setAttribute('download', `Filtered_Tasks_Report.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     }
 
+    // CSV IMPORT
     function importCSV(e) {
       const file = e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = function(evt) {
-        try {
-          const text = evt.target.result;
-          const lines = text.split(/\r\n|\n/);
-          let count = 0;
+        const text = evt.target.result;
+        const lines = text.split('\n');
+        let count = 0;
 
-          for (let i = 1; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line) continue;
-            
-            // Native CSV Row Parser
-            const cols = line.split(',').map(c => c.replace(/^"|"$/g, '').trim());
-            if (cols.length >= 2) {
-              tasks.unshift({
-                id: Date.now() + i,
-                title: cols[0] || 'Imported Task',
-                group: GROUPS.includes(cols[1]) ? cols[1] : 'HR',
-                assignee: cols[2] || 'Unassigned',
-                status: STATUSES.includes(cols[3]) ? cols[3] : 'Not Started',
-                priority: ['Low', 'Medium', 'High', 'Urgent'].includes(cols[4]) ? cols[4] : 'Medium',
-                progress: parseInt(cols[5], 10) || 0,
-                startDate: cols[6] || '',
-                endDate: cols[7] || ''
-              });
-              count++;
-            }
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          const cols = line.split(',').map(c => c.replace(/^"|"\$/g, '').trim());
+          if (cols.length >= 2) {
+            tasks.unshift({
+              id: Date.now() + i,
+              title: cols[0] || 'Imported Task',
+              group: cols[1] || 'HR',
+              assignee: cols[2] || 'Kashyap',
+              status: cols[3] || 'Not Started',
+              priority: cols[4] || 'Medium',
+              progress: parseInt(cols[5], 10) || 0,
+              startDate: cols[7] || '',
+              endDate: cols[8] || '',
+              comment: cols[9] || ''
+            });
+            count++;
           }
-
-          saveData();
-          alert(`Successfully imported ${count} tasks!`);
-        } catch (err) {
-          alert('Error parsing CSV file. Ensure standard column formatting.');
         }
+        saveData();
+        alert(`Successfully imported ${count} tasks!`);
       };
       reader.readAsText(file);
-      e.target.value = ''; // Reset file input
     }
 
-    // INITIAL STARTUP
-    window.onload = function() {
-      initData();
-    };
+    // INITIALIZATION
+    populateYearMonthSlicer();
+    renderApp();
   </script>
 </body>
 </html>
