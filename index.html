@@ -3,161 +3,474 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Team Task Manager</title>
-  <!-- Tailwind CSS for Styling -->
+  <title>Team Task Manager Dashboard</title>
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- PapaParse for CSV Support -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen">
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
 
-  <div class="max-w-6xl mx-auto p-6">
-    <!-- Header -->
-    <header class="mb-8 border-b border-slate-800 pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+  <div class="max-w-7xl mx-auto p-4 sm:p-6">
+    <!-- Top Header -->
+    <header class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-slate-800">
       <div>
-        <h1 class="text-2xl font-bold text-white">Team Task Manager</h1>
-        <p class="text-slate-400 text-sm">Track team task progress by Task Group / Department</p>
+        <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+          <span>📋</span> Team Task Manager
+        </h1>
+        <p class="text-slate-400 text-sm mt-1">Collaborative dashboard with multi-view tracking & department analytics</p>
       </div>
-      <div class="flex items-center gap-2">
-        <label for="groupFilter" class="text-sm font-medium text-slate-300">Filter Group:</label>
-        <select id="groupFilter" onchange="renderTasks()" class="bg-slate-800 text-white border border-slate-700 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500">
-          <option value="All">All Groups</option>
-          <option value="HR">HR</option>
-          <option value="Finance">Finance</option>
-          <option value="IT">IT</option>
-          <option value="Marketing">Marketing</option>
-          <option value="Operations">Operations</option>
-        </select>
+
+      <!-- Global Actions: Import / Export / Add -->
+      <div class="flex flex-wrap items-center gap-3">
+        <label class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-lg text-sm font-medium cursor-pointer transition flex items-center gap-1.5">
+          <span>📥</span> Import CSV
+          <input type="file" id="csvFileInput" accept=".csv" onchange="importCSV(event)" class="hidden" />
+        </label>
+        <button onclick="exportCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
+          <span>📤</span> Export CSV
+        </button>
+        <button onclick="toggleModal(true)" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 shadow-lg shadow-blue-500/20">
+          <span>+</span> New Task
+        </button>
       </div>
     </header>
 
-    <!-- Task Creation Form -->
-    <form onsubmit="handleAddTask(event)" class="bg-slate-800 p-4 rounded-lg mb-6 flex flex-col md:flex-row gap-3 border border-slate-700">
-      <input 
-        type="text" 
-        id="taskTitle"
-        placeholder="Enter new task name..." 
-        required
-        class="flex-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-      />
-      <select id="taskGroup" class="bg-slate-900 border border-slate-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
-        <option value="HR">HR</option>
-        <option value="Finance">Finance</option>
-        <option value="IT">IT</option>
-        <option value="Marketing">Marketing</option>
-        <option value="Operations">Operations</option>
-      </select>
-      <input 
-        type="text" 
-        id="taskAssignee"
-        placeholder="Assignee Name" 
-        class="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-      />
-      <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded text-sm font-medium transition-colors">
-        + Add Task
-      </button>
-    </form>
+    <!-- Controls Row: Slicers & View Switcher -->
+    <div class="my-6 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-slate-800/60 p-4 rounded-xl border border-slate-800">
+      
+      <!-- View Switcher -->
+      <div class="flex bg-slate-900 p-1 rounded-lg border border-slate-700/60 self-start md:self-auto">
+        <button onclick="switchView('kanban')" id="tab-kanban" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition bg-blue-600 text-white">
+          Kanban Board
+        </button>
+        <button onclick="switchView('table')" id="tab-table" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition text-slate-400 hover:text-slate-200">
+          Table View
+        </button>
+        <button onclick="switchView('grouped')" id="tab-grouped" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition text-slate-400 hover:text-slate-200">
+          Grouped View
+        </button>
+        <button onclick="switchView('analytics')" id="tab-analytics" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition text-slate-400 hover:text-slate-200">
+          Analytics
+        </button>
+      </div>
 
-    <!-- Task Table -->
-    <div class="bg-slate-800 rounded-lg overflow-hidden border border-slate-700 shadow-xl">
-      <table class="w-full text-left border-collapse">
-        <thead>
-          <tr class="bg-slate-900/60 text-slate-400 text-xs uppercase border-b border-slate-700">
-            <th class="p-3.5">Task Title</th>
-            <th class="p-3.5">Task Group</th>
-            <th class="p-3.5">Assignee</th>
-            <th class="p-3.5">Status</th>
-            <th class="p-3.5">Action</th>
-          </tr>
-        </thead>
-        <tbody id="taskTableBody" class="divide-y divide-slate-700/50 text-sm">
-          <!-- Tasks render dynamically via JS -->
-        </tbody>
-      </table>
+      <!-- Slicers / Filters -->
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-400 font-medium">Task Group:</span>
+          <select id="filterGroup" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
+            <option value="All">All Groups</option>
+            <option value="HR">HR</option>
+            <option value="Finance">Finance</option>
+            <option value="IT">IT</option>
+            <option value="Marketing">Marketing</option>
+            <option value="Operations">Operations</option>
+            <option value="Sales">Sales</option>
+            <option value="Legal">Legal</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-400 font-medium">Priority:</span>
+          <select id="filterPriority" onchange="renderApp()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
+            <option value="All">All Priorities</option>
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+            <option value="Urgent">Urgent</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT VIEWS CONTAINER -->
+    <main id="viewContainer">
+      <!-- Dynamic Views rendered via JS -->
+    </main>
+  </div>
+
+  <!-- CREATE / EDIT TASK MODAL -->
+  <div id="taskModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-slate-800 border border-slate-700 w-full max-w-lg rounded-xl p-6 shadow-2xl">
+      <div class="flex justify-between items-center mb-5">
+        <h3 class="text-lg font-bold text-white">Create New Task</h3>
+        <button onclick="toggleModal(false)" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      
+      <form onsubmit="handleSaveTask(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Task Title *</label>
+          <input type="text" id="mTitle" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" placeholder="e.g. Prepare Q3 Balance Sheet" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Task Group / Dept *</label>
+            <select id="mGroup" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+              <option value="HR">HR</option>
+              <option value="Finance">Finance</option>
+              <option value="IT">IT</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Operations">Operations</option>
+              <option value="Sales">Sales</option>
+              <option value="Legal">Legal</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Assignee</label>
+            <input type="text" id="mAssignee" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" placeholder="e.g. Sarah Jenkins" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Status</label>
+            <select id="mStatus" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+              <option value="Not Started">Not Started</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Under Review">Under Review</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Priority</label>
+            <select id="mPriority" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+              <option value="Low">Low</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="High">High</option>
+              <option value="Urgent">Urgent</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Start Date</label>
+            <input type="date" id="mStartDate" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">End Date</label>
+            <input type="date" id="mEndDate" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-slate-700">
+          <button type="button" onclick="toggleModal(false)" class="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white">Cancel</button>
+          <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg text-sm font-semibold transition">Save Task</button>
+        </div>
+      </form>
     </div>
   </div>
 
   <script>
-    // Initial Task Data
-    let tasks = [
-      { id: 1, title: 'Annual Audit Prep', group: 'Finance', assignee: 'Sarah Jenkins', status: 'In Progress' },
-      { id: 2, title: 'Onboard New Engineers', group: 'HR', assignee: 'Alex Rivera', status: 'Not Started' },
-      { id: 3, title: 'Server OS Patching', group: 'IT', assignee: 'David Chen', status: 'Under Review' },
-      { id: 4, title: 'Q4 Marketing Strategy', group: 'Marketing', assignee: 'Emma Watson', status: 'Completed' }
+    // CORE APPLICATION STATE
+    let currentView = 'kanban';
+    let tasks = JSON.parse(localStorage.getItem('team_tasks_data')) || [
+      { id: 1, title: 'Annual Financial Audit', group: 'Finance', assignee: 'Sarah Jenkins', status: 'In Progress', priority: 'High', startDate: '2026-10-01', endDate: '2026-10-15' },
+      { id: 2, title: 'Onboard Senior Engineers', group: 'HR', assignee: 'Alex Rivera', status: 'Not Started', priority: 'Medium', startDate: '2026-10-10', endDate: '2026-10-25' },
+      { id: 3, title: 'Server OS Security Patch', group: 'IT', assignee: 'David Chen', status: 'Under Review', priority: 'Urgent', startDate: '2026-10-05', endDate: '2026-10-09' },
+      { id: 4, title: 'Q4 Product Launch Campaign', group: 'Marketing', assignee: 'Emma Watson', status: 'Completed', priority: 'High', startDate: '2026-09-15', endDate: '2026-10-01' },
+      { id: 5, title: 'Vendor Contract Renewal', group: 'Legal', assignee: 'Michael Brown', status: 'In Progress', priority: 'Low', startDate: '2026-10-08', endDate: '2026-10-20' }
     ];
 
-    function renderTasks() {
-      const selectedGroup = document.getElementById('groupFilter').value;
-      const tableBody = document.getElementById('taskTableBody');
-      tableBody.innerHTML = '';
+    const STATUSES = ['Not Started', 'In Progress', 'Under Review', 'Completed'];
 
-      const filteredTasks = tasks.filter(task => selectedGroup === 'All' || task.group === selectedGroup);
+    function saveState() {
+      localStorage.setItem('team_tasks_data', JSON.stringify(tasks));
+      renderApp();
+    }
 
-      if (filteredTasks.length === 0) {
-        tableBody.innerHTML = `
-          <tr>
-            <td colspan="5" class="p-6 text-center text-slate-500">No tasks found for this Task Group.</td>
-          </tr>
-        `;
-        return;
-      }
+    function switchView(view) {
+      currentView = view;
+      document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.className = 'view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition text-slate-400 hover:text-slate-200';
+      });
+      document.getElementById(`tab-${view}`).className = 'view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition bg-blue-600 text-white';
+      renderApp();
+    }
 
-      filteredTasks.forEach(task => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-700/30 transition-colors';
-        tr.innerHTML = `
-          <td class="p-3.5 font-medium text-white">${task.title}</td>
-          <td class="p-3.5">
-            <span class="px-2.5 py-1 text-xs font-semibold rounded bg-purple-900/50 text-purple-300 border border-purple-700/50">
-              ${task.group}
-            </span>
-          </td>
-          <td class="p-3.5 text-slate-300">${task.assignee || 'Unassigned'}</td>
-          <td class="p-3.5">
-            <select onchange="updateStatus(${task.id}, this.value)" class="bg-slate-900 border border-slate-700 text-xs rounded px-2.5 py-1 text-slate-200 focus:outline-none">
-              <option value="Not Started" ${task.status === 'Not Started' ? 'selected' : ''}>Not Started</option>
-              <option value="In Progress" ${task.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
-              <option value="Under Review" ${task.status === 'Under Review' ? 'selected' : ''}>Under Review</option>
-              <option value="Completed" ${task.status === 'Completed' ? 'selected' : ''}>Completed</option>
-            </select>
-          </td>
-          <td class="p-3.5">
-            <button onclick="deleteTask(${task.id})" class="text-xs text-red-400 hover:text-red-300 font-medium">Delete</button>
-          </td>
-        `;
-        tableBody.appendChild(tr);
+    function getFilteredTasks() {
+      const g = document.getElementById('filterGroup').value;
+      const p = document.getElementById('filterPriority').value;
+
+      return tasks.filter(t => {
+        const matchGroup = (g === 'All' || t.group === g);
+        const matchPriority = (p === 'All' || t.priority === p);
+        return matchGroup && matchPriority;
       });
     }
 
-    function handleAddTask(e) {
-      e.preventDefault();
-      const titleInput = document.getElementById('taskTitle');
-      const groupInput = document.getElementById('taskGroup');
-      const assigneeInput = document.getElementById('taskAssignee');
+    function renderApp() {
+      const container = document.getElementById('viewContainer');
+      const filtered = getFilteredTasks();
 
-      const newTask = {
-        id: Date.now(),
-        title: titleInput.value,
-        group: groupInput.value,
-        assignee: assigneeInput.value || 'Unassigned',
-        status: 'Not Started'
-      };
+      if (currentView === 'kanban') renderKanbanView(container, filtered);
+      else if (currentView === 'table') renderTableView(container, filtered);
+      else if (currentView === 'grouped') renderGroupedView(container, filtered);
+      else if (currentView === 'analytics') renderAnalyticsView(container);
+    }
 
-      tasks.unshift(newTask);
-      titleInput.value = '';
-      assigneeInput.value = '';
-      renderTasks();
+    // 1. KANBAN BOARD VIEW
+    function renderKanbanView(container, filtered) {
+      container.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"></div>`;
+      const grid = container.firstElementChild;
+
+      STATUSES.forEach(status => {
+        const colTasks = filtered.filter(t => t.status === status);
+        const col = document.createElement('div');
+        col.className = 'bg-slate-800/50 border border-slate-800 rounded-xl p-3 flex flex-col min-h-[500px]';
+        
+        let cardsHTML = colTasks.map(t => `
+          <div class="bg-slate-800 border border-slate-700/80 hover:border-slate-600 rounded-lg p-3.5 shadow-sm space-y-2.5 transition">
+            <div class="flex justify-between items-start gap-2">
+              <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-purple-900/60 text-purple-300 border border-purple-700/50 uppercase">
+                ${t.group}
+              </span>
+              <span class="px-2 py-0.5 text-[10px] font-bold rounded ${getPriorityClass(t.priority)}">
+                ${t.priority}
+              </span>
+            </div>
+            
+            <h4 class="font-semibold text-sm text-slate-100">${t.title}</h4>
+            
+            <div class="flex items-center justify-between text-xs text-slate-400 pt-1 border-t border-slate-700/50">
+              <span>👤 ${t.assignee || 'Unassigned'}</span>
+              <button onclick="deleteTask(${t.id})" class="text-red-400 hover:text-red-300 font-bold text-xs">✕</button>
+            </div>
+
+            <div class="pt-1">
+              <select onchange="updateStatus(${t.id}, this.value)" class="w-full bg-slate-900 border border-slate-700 rounded text-xs px-2 py-1 text-slate-300">
+                ${STATUSES.map(s => `<option value="${s}" ${s === t.status ? 'selected' : ''}>Move to: \${s}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+        `).join('');
+
+        col.innerHTML = `
+          <div class="flex items-center justify-between pb-3 border-b border-slate-700/60 mb-3">
+            <h3 class="font-bold text-xs text-slate-300 uppercase tracking-wider">${status}</h3>
+            <span class="bg-slate-700 text-slate-300 text-xs px-2 py-0.5 rounded-full font-bold">${colTasks.length}</span>
+          </div>
+          <div class="space-y-3 flex-1">${cardsHTML || '<p class="text-xs text-slate-500 italic text-center pt-8">No tasks</p>'}</div>
+        `;
+        grid.appendChild(col);
+      });
+    }
+
+    // 2. TABLE VIEW
+    function renderTableView(container, filtered) {
+      container.innerHTML = `
+        <div class="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 shadow-xl">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-900/80 text-slate-400 text-xs uppercase border-b border-slate-700">
+                <th class="p-3.5">Task Title</th>
+                <th class="p-3.5">Group</th>
+                <th class="p-3.5">Assignee</th>
+                <th class="p-3.5">Priority</th>
+                <th class="p-3.5">Status</th>
+                <th class="p-3.5">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700/50 text-sm">
+              ${filtered.map(t => `
+                <tr class="hover:bg-slate-700/30 transition">
+                  <td class="p-3.5 font-medium text-white">\${t.title}</td>
+                  <td class="p-3.5"><span class="px-2 py-0.5 text-xs rounded bg-purple-900/50 text-purple-300 border border-purple-700/50 font-medium">\${t.group}</span></td>
+                  <td class="p-3.5 text-slate-300">\${t.assignee || 'Unassigned'}</td>
+                  <td class="p-3.5"><span class="px-2 py-0.5 text-xs rounded ${getPriorityClass(t.priority)}">${t.priority}</span></td>
+                  <td class="p-3.5">
+                    <select onchange="updateStatus(\${t.id}, this.value)" class="bg-slate-900 border border-slate-700 text-xs rounded px-2.5 py-1 text-slate-200">
+                      \${STATUSES.map(s => `<option value="${s}" ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}
+                    </select>
+                  </td>
+                  <td class="p-3.5">
+                    <button onclick="deleteTask(\${t.id})" class="text-xs text-red-400 hover:text-red-300 font-semibold">Delete</button>
+                  </td>
+                </tr>
+              `).join('') || '<tr><td colspan="6" class="p-6 text-center text-slate-500">No matching tasks found.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    // 3. GROUPED VIEW
+    function renderGroupedView(container, filtered) {
+      const groups = ['HR', 'Finance', 'IT', 'Marketing', 'Operations', 'Sales', 'Legal'];
+      container.innerHTML = `<div class="space-y-6"></div>`;
+      const wrapper = container.firstElementChild;
+
+      groups.forEach(g => {
+        const groupTasks = filtered.filter(t => t.group === g);
+        if (groupTasks.length === 0) return;
+
+        const sec = document.createElement('div');
+        sec.className = 'bg-slate-800/80 border border-slate-700 rounded-xl p-4';
+        sec.innerHTML = `
+          <div class="flex items-center justify-between pb-3 border-b border-slate-700 mb-3">
+            <h3 class="font-bold text-md text-purple-300 flex items-center gap-2">📁 ${g} Department</h3>
+            <span class="bg-purple-950/80 text-purple-300 border border-purple-700/50 text-xs px-2.5 py-0.5 rounded-full font-bold">${groupTasks.length} Tasks</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            ${groupTasks.map(t => `
+              <div class="bg-slate-900 p-3 rounded-lg border border-slate-700/60 flex flex-col justify-between space-y-2">
+                <div class="font-semibold text-sm text-slate-100">\${t.title}</div>
+                <div class="flex items-center justify-between text-xs text-slate-400">
+                  <span>👤 \${t.assignee}</span>
+                  <span class="px-2 py-0.5 text-[10px] rounded ${getPriorityClass(t.priority)}">${t.priority}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        wrapper.appendChild(sec);
+      });
+    }
+
+    // 4. ANALYTICS & PROGRESS BARS VIEW
+    function renderAnalyticsView(container) {
+      const total = tasks.length;
+      const completed = tasks.filter(t => t.status === 'Completed').length;
+      const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+      const groups = ['HR', 'Finance', 'IT', 'Marketing', 'Operations', 'Sales', 'Legal'];
+
+      container.innerHTML = `
+        <div class="space-y-6">
+          <!-- Overall Progress Summary -->
+          <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-xl">
+            <div class="flex justify-between items-center mb-3">
+              <div>
+                <h3 class="text-lg font-bold text-white">Overall Task Completion</h3>
+                <p class="text-xs text-slate-400">Real-time status across all task groups</p>
+              </div>
+              <span class="text-2xl font-black text-blue-400">${percent}%</span>
+            </div>
+            
+            <div class="w-full bg-slate-900 rounded-full h-4 overflow-hidden border border-slate-700 p-0.5">
+              <div class="bg-gradient-to-r from-blue-500 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: ${percent}%"></div>
+            </div>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-700/60 text-center">
+              <div><div class="text-xs text-slate-400">Total Tasks</div><div class="text-xl font-bold text-white">${total}</div></div>
+              <div><div class="text-xs text-slate-400">In Progress</div><div class="text-xl font-bold text-amber-400">${tasks.filter(t => t.status==='In Progress').length}</div></div>
+              <div><div class="text-xs text-slate-400">Under Review</div><div class="text-xl font-bold text-purple-400">${tasks.filter(t => t.status==='Under Review').length}</div></div>
+              <div><div class="text-xs text-slate-400">Completed</div><div class="text-xl font-bold text-emerald-400">${completed}</div></div>
+            </div>
+          </div>
+
+          <!-- Breakdown By Task Group -->
+          <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-xl">
+            <h3 class="text-md font-bold text-white mb-4">Departmental Workload Progress</h3>
+            <div class="space-y-4">
+              ${groups.map(g => {
+                const gTasks = tasks.filter(t => t.group === g);
+                const gDone = gTasks.filter(t => t.status === 'Completed').length;
+                const gPct = gTasks.length > 0 ? Math.round((gDone / gTasks.length) * 100) : 0;
+                
+                return `
+                  <div>
+                    <div class="flex justify-between text-xs font-semibold mb-1">
+                      <span class="text-slate-200">\${g} (${gDone}/${gTasks.length} Completed)</span>
+                      <span class="text-purple-300">\${gPct}%</span>
+                    </div>
+                    <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-700/60">
+                      <div class="bg-purple-500 h-full rounded-full" style="width: \${gPct}%"></div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // UTILITY FUNCTIONS & HANDLERS
+    function getPriorityClass(p) {
+      if (p === 'Urgent') return 'bg-red-950 text-red-300 border border-red-800/60';
+      if (p === 'High') return 'bg-amber-950 text-amber-300 border border-amber-800/60';
+      if (p === 'Medium') return 'bg-blue-950 text-blue-300 border border-blue-800/60';
+      return 'bg-slate-700 text-slate-300';
     }
 
     function updateStatus(id, newStatus) {
       tasks = tasks.map(t => t.id === id ? { ...t, status: newStatus } : t);
+      saveState();
     }
 
     function deleteTask(id) {
       tasks = tasks.filter(t => t.id !== id);
-      renderTasks();
+      saveState();
     }
 
-    // Initial load
-    renderTasks();
+    function toggleModal(open) {
+      document.getElementById('taskModal').classList.toggle('hidden', !open);
+    }
+
+    function handleSaveTask(e) {
+      e.preventDefault();
+      const newTask = {
+        id: Date.now(),
+        title: document.getElementById('mTitle').value,
+        group: document.getElementById('mGroup').value,
+        assignee: document.getElementById('mAssignee').value || 'Unassigned',
+        status: document.getElementById('mStatus').value,
+        priority: document.getElementById('mPriority').value,
+        startDate: document.getElementById('mStartDate').value,
+        endDate: document.getElementById('mEndDate').value
+      };
+
+      tasks.unshift(newTask);
+      saveState();
+      toggleModal(false);
+      
+      document.getElementById('mTitle').value = '';
+      document.getElementById('mAssignee').value = '';
+    }
+
+    // CSV IMPORT / EXPORT
+    function exportCSV() {
+      const csv = Papa.unparse(tasks);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', `Task_Report_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function importCSV(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          const importedTasks = results.data.map((row, idx) => ({
+            id: Date.now() + idx,
+            title: row.Title || row['Task Name'] || row.title || 'Imported Task',
+            group: row.Group || row.Department || row.group || 'HR',
+            assignee: row.Assignee || row['Assigned To'] || row.assignee || 'Unassigned',
+            status: row.Status || row.status || 'Not Started',
+            priority: row.Priority || row.priority || 'Medium',
+            startDate: row['Start Date'] || row.startDate || '',
+            endDate: row['End Date'] || row.endDate || ''
+          }));
+
+          tasks = [...importedTasks, ...tasks];
+          saveState();
+          alert(`Successfully imported ${importedTasks.length} tasks!`);
+        }
+      });
+    }
+
+    // INITIAL LOAD
+    renderApp();
   </script>
 </body>
 </html>
