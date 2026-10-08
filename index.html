@@ -4,10 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Team Task Manager Dashboard</title>
-  <!-- Tailwind CSS -->
+  <!-- Tailwind CSS for Styling -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- PapaParse for CSV Support -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <style>
+    .modal-active { display: flex !important; }
+  </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
 
@@ -21,25 +22,25 @@
         <p class="text-slate-400 text-sm mt-1">Collaborative dashboard with multi-view tracking & department analytics</p>
       </div>
 
-      <!-- Global Actions: Import / Export / Add -->
+      <!-- Action Buttons -->
       <div class="flex flex-wrap items-center gap-3">
-        <label class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-lg text-sm font-medium cursor-pointer transition flex items-center gap-1.5">
+        <label class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition flex items-center gap-2">
           <span>📥</span> Import CSV
           <input type="file" id="csvFileInput" accept=".csv" onchange="importCSV(event)" class="hidden" />
         </label>
-        <button onclick="exportCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
+        <button onclick="exportCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
           <span>📤</span> Export CSV
         </button>
-        <button onclick="toggleModal(true)" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 shadow-lg shadow-blue-500/20">
+        <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 shadow-lg shadow-blue-500/20">
           <span>+</span> New Task
         </button>
       </div>
     </header>
 
-    <!-- Controls Row: Slicers & View Switcher -->
+    <!-- Controls Row: Views & Slicers -->
     <div class="my-6 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-slate-800/60 p-4 rounded-xl border border-slate-800">
       
-      <!-- View Switcher -->
+      <!-- View Navigation Tabs -->
       <div class="flex bg-slate-900 p-1 rounded-lg border border-slate-700/60 self-start md:self-auto">
         <button onclick="switchView('kanban')" id="tab-kanban" class="view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition bg-blue-600 text-white">
           Kanban Board
@@ -55,7 +56,7 @@
         </button>
       </div>
 
-      <!-- Slicers / Filters -->
+      <!-- Filters / Slicers -->
       <div class="flex flex-wrap items-center gap-3">
         <div class="flex items-center gap-2">
           <span class="text-xs text-slate-400 font-medium">Task Group:</span>
@@ -84,21 +85,19 @@
       </div>
     </div>
 
-    <!-- MAIN CONTENT VIEWS CONTAINER -->
-    <main id="viewContainer">
-      <!-- Dynamic Views rendered via JS -->
-    </main>
+    <!-- MAIN VIEW CONTAINER -->
+    <main id="viewContainer"></main>
   </div>
 
-  <!-- CREATE / EDIT TASK MODAL -->
-  <div id="taskModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+  <!-- NEW TASK POPUP MODAL -->
+  <div id="taskModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="bg-slate-800 border border-slate-700 w-full max-w-lg rounded-xl p-6 shadow-2xl">
       <div class="flex justify-between items-center mb-5">
         <h3 class="text-lg font-bold text-white">Create New Task</h3>
-        <button onclick="toggleModal(false)" class="text-slate-400 hover:text-white text-lg">✕</button>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
       </div>
       
-      <form onsubmit="handleSaveTask(event)" class="space-y-4">
+      <form onsubmit="handleAddTask(event)" class="space-y-4">
         <div>
           <label class="block text-xs font-medium text-slate-300 mb-1">Task Title *</label>
           <input type="text" id="mTitle" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" placeholder="e.g. Prepare Q3 Balance Sheet" />
@@ -144,19 +143,8 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Start Date</label>
-            <input type="date" id="mStartDate" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">End Date</label>
-            <input type="date" id="mEndDate" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
-          </div>
-        </div>
-
         <div class="flex justify-end gap-3 pt-4 border-t border-slate-700">
-          <button type="button" onclick="toggleModal(false)" class="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white">Cancel</button>
+          <button type="button" onclick="closeModal()" class="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white">Cancel</button>
           <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg text-sm font-semibold transition">Save Task</button>
         </div>
       </form>
@@ -164,20 +152,20 @@
   </div>
 
   <script>
-    // CORE APPLICATION STATE
+    // INITIAL APP DATA & PERSISTENCE
     let currentView = 'kanban';
-    let tasks = JSON.parse(localStorage.getItem('team_tasks_data')) || [
-      { id: 1, title: 'Annual Financial Audit', group: 'Finance', assignee: 'Sarah Jenkins', status: 'In Progress', priority: 'High', startDate: '2026-10-01', endDate: '2026-10-15' },
-      { id: 2, title: 'Onboard Senior Engineers', group: 'HR', assignee: 'Alex Rivera', status: 'Not Started', priority: 'Medium', startDate: '2026-10-10', endDate: '2026-10-25' },
-      { id: 3, title: 'Server OS Security Patch', group: 'IT', assignee: 'David Chen', status: 'Under Review', priority: 'Urgent', startDate: '2026-10-05', endDate: '2026-10-09' },
-      { id: 4, title: 'Q4 Product Launch Campaign', group: 'Marketing', assignee: 'Emma Watson', status: 'Completed', priority: 'High', startDate: '2026-09-15', endDate: '2026-10-01' },
-      { id: 5, title: 'Vendor Contract Renewal', group: 'Legal', assignee: 'Michael Brown', status: 'In Progress', priority: 'Low', startDate: '2026-10-08', endDate: '2026-10-20' }
+    let tasks = JSON.parse(localStorage.getItem('team_tasks_data_v2')) || [
+      { id: 1, title: 'Annual Financial Audit', group: 'Finance', assignee: 'Sarah Jenkins', status: 'In Progress', priority: 'High' },
+      { id: 2, title: 'Onboard Senior Engineers', group: 'HR', assignee: 'Alex Rivera', status: 'Not Started', priority: 'Medium' },
+      { id: 3, title: 'Server OS Security Patch', group: 'IT', assignee: 'David Chen', status: 'Under Review', priority: 'Urgent' },
+      { id: 4, title: 'Q4 Marketing Strategy', group: 'Marketing', assignee: 'Emma Watson', status: 'Completed', priority: 'High' },
+      { id: 5, title: 'Vendor Contract Renewal', group: 'Legal', assignee: 'Michael Brown', status: 'In Progress', priority: 'Low' }
     ];
 
     const STATUSES = ['Not Started', 'In Progress', 'Under Review', 'Completed'];
 
-    function saveState() {
-      localStorage.setItem('team_tasks_data', JSON.stringify(tasks));
+    function saveData() {
+      localStorage.setItem('team_tasks_data_v2', JSON.stringify(tasks));
       renderApp();
     }
 
@@ -186,80 +174,90 @@
       document.querySelectorAll('.view-btn').forEach(btn => {
         btn.className = 'view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition text-slate-400 hover:text-slate-200';
       });
-      document.getElementById(`tab-${view}`).className = 'view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition bg-blue-600 text-white';
+      document.getElementById('tab-' + view).className = 'view-btn px-3 py-1.5 text-xs font-semibold rounded-md transition bg-blue-600 text-white';
       renderApp();
     }
 
     function getFilteredTasks() {
       const g = document.getElementById('filterGroup').value;
       const p = document.getElementById('filterPriority').value;
-
-      return tasks.filter(t => {
-        const matchGroup = (g === 'All' || t.group === g);
-        const matchPriority = (p === 'All' || t.priority === p);
-        return matchGroup && matchPriority;
-      });
+      return tasks.filter(t => (g === 'All' || t.group === g) && (p === 'All' || t.priority === p));
     }
 
     function renderApp() {
       const container = document.getElementById('viewContainer');
       const filtered = getFilteredTasks();
 
-      if (currentView === 'kanban') renderKanbanView(container, filtered);
-      else if (currentView === 'table') renderTableView(container, filtered);
-      else if (currentView === 'grouped') renderGroupedView(container, filtered);
-      else if (currentView === 'analytics') renderAnalyticsView(container);
+      if (currentView === 'kanban') renderKanban(container, filtered);
+      else if (currentView === 'table') renderTable(container, filtered);
+      else if (currentView === 'grouped') renderGrouped(container, filtered);
+      else if (currentView === 'analytics') renderAnalytics(container);
     }
 
-    // 1. KANBAN BOARD VIEW
-    function renderKanbanView(container, filtered) {
-      container.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"></div>`;
-      const grid = container.firstElementChild;
-
+    // KANBAN BOARD
+    function renderKanban(container, filtered) {
+      let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">';
+      
       STATUSES.forEach(status => {
         const colTasks = filtered.filter(t => t.status === status);
-        const col = document.createElement('div');
-        col.className = 'bg-slate-800/50 border border-slate-800 rounded-xl p-3 flex flex-col min-h-[500px]';
         
-        let cardsHTML = colTasks.map(t => `
-          <div class="bg-slate-800 border border-slate-700/80 hover:border-slate-600 rounded-lg p-3.5 shadow-sm space-y-2.5 transition">
-            <div class="flex justify-between items-start gap-2">
-              <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-purple-900/60 text-purple-300 border border-purple-700/50 uppercase">
-                ${t.group}
-              </span>
-              <span class="px-2 py-0.5 text-[10px] font-bold rounded ${getPriorityClass(t.priority)}">
-                ${t.priority}
-              </span>
-            </div>
-            
-            <h4 class="font-semibold text-sm text-slate-100">${t.title}</h4>
-            
-            <div class="flex items-center justify-between text-xs text-slate-400 pt-1 border-t border-slate-700/50">
-              <span>👤 ${t.assignee || 'Unassigned'}</span>
-              <button onclick="deleteTask(${t.id})" class="text-red-400 hover:text-red-300 font-bold text-xs">✕</button>
-            </div>
-
-            <div class="pt-1">
-              <select onchange="updateStatus(${t.id}, this.value)" class="w-full bg-slate-900 border border-slate-700 rounded text-xs px-2 py-1 text-slate-300">
-                ${STATUSES.map(s => `<option value="${s}" ${s === t.status ? 'selected' : ''}>Move to: \${s}</option>`).join('')}
+        let cardsHTML = '';
+        colTasks.forEach(t => {
+          cardsHTML += `
+            <div class="bg-slate-800 border border-slate-700 rounded-lg p-3.5 space-y-2.5 shadow-sm">
+              <div class="flex justify-between items-center">
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-purple-900/60 text-purple-300 border border-purple-700/50">${t.group}</span>
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded ${getPriorityStyle(t.priority)}">${t.priority}</span>
+              </div>
+              <h4 class="font-semibold text-sm text-white">${t.title}</h4>
+              <div class="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-700/60">
+                <span>👤 ${t.assignee || 'Unassigned'}</span>
+                <button onclick="deleteTask(${t.id})" class="text-red-400 hover:text-red-300 font-bold">✕</button>
+              </div>
+              <select onchange="updateStatus(${t.id}, this.value)" class="w-full bg-slate-900 border border-slate-700 text-xs rounded px-2 py-1 text-slate-300 focus:outline-none">
+                ${STATUSES.map(s => `<option value="\${s}" ${s === t.status ? 'selected' : ''}>Move: ${s}</option>`).join('')}
               </select>
             </div>
-          </div>
-        `).join('');
+          `;
+        });
 
-        col.innerHTML = `
-          <div class="flex items-center justify-between pb-3 border-b border-slate-700/60 mb-3">
-            <h3 class="font-bold text-xs text-slate-300 uppercase tracking-wider">${status}</h3>
-            <span class="bg-slate-700 text-slate-300 text-xs px-2 py-0.5 rounded-full font-bold">${colTasks.length}</span>
+        html += `
+          <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-3 flex flex-col min-h-[450px]">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-700/60 mb-3">
+              <h3 class="font-bold text-xs text-slate-300 uppercase tracking-wider">${status}</h3>
+              <span class="bg-slate-700 text-slate-200 text-xs px-2 py-0.5 rounded-full font-bold">${colTasks.length}</span>
+            </div>
+            <div class="space-y-3 flex-1">${cardsHTML || '<p class="text-xs text-slate-500 italic text-center pt-8">No tasks</p>'}</div>
           </div>
-          <div class="space-y-3 flex-1">${cardsHTML || '<p class="text-xs text-slate-500 italic text-center pt-8">No tasks</p>'}</div>
         `;
-        grid.appendChild(col);
       });
+
+      html += '</div>';
+      container.innerHTML = html;
     }
 
-    // 2. TABLE VIEW
-    function renderTableView(container, filtered) {
+    // TABLE VIEW
+    function renderTable(container, filtered) {
+      let rows = '';
+      filtered.forEach(t => {
+        rows += `
+          <tr class="hover:bg-slate-700/30 transition">
+            <td class="p-3.5 font-medium text-white">${t.title}</td>
+            <td class="p-3.5"><span class="px-2 py-0.5 text-xs rounded bg-purple-900/50 text-purple-300 border border-purple-700/50 font-medium">${t.group}</span></td>
+            <td class="p-3.5 text-slate-300">${t.assignee || 'Unassigned'}</td>
+            <td class="p-3.5"><span class="px-2 py-0.5 text-xs rounded ${getPriorityStyle(t.priority)}">${t.priority}</span></td>
+            <td class="p-3.5">
+              <select onchange="updateStatus(${t.id}, this.value)" class="bg-slate-900 border border-slate-700 text-xs rounded px-2 py-1 text-slate-200">
+                ${STATUSES.map(s => `<option value="\${s}" ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}
+              </select>
+            </td>
+            <td class="p-3.5">
+              <button onclick="deleteTask(${t.id})" class="text-xs text-red-400 hover:text-red-300 font-semibold">Delete</button>
+            </td>
+          </tr>
+        `;
+      });
+
       container.innerHTML = `
         <div class="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 shadow-xl">
           <table class="w-full text-left border-collapse">
@@ -274,122 +272,101 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700/50 text-sm">
-              ${filtered.map(t => `
-                <tr class="hover:bg-slate-700/30 transition">
-                  <td class="p-3.5 font-medium text-white">\${t.title}</td>
-                  <td class="p-3.5"><span class="px-2 py-0.5 text-xs rounded bg-purple-900/50 text-purple-300 border border-purple-700/50 font-medium">\${t.group}</span></td>
-                  <td class="p-3.5 text-slate-300">\${t.assignee || 'Unassigned'}</td>
-                  <td class="p-3.5"><span class="px-2 py-0.5 text-xs rounded ${getPriorityClass(t.priority)}">${t.priority}</span></td>
-                  <td class="p-3.5">
-                    <select onchange="updateStatus(\${t.id}, this.value)" class="bg-slate-900 border border-slate-700 text-xs rounded px-2.5 py-1 text-slate-200">
-                      \${STATUSES.map(s => `<option value="${s}" ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}
-                    </select>
-                  </td>
-                  <td class="p-3.5">
-                    <button onclick="deleteTask(\${t.id})" class="text-xs text-red-400 hover:text-red-300 font-semibold">Delete</button>
-                  </td>
-                </tr>
-              `).join('') || '<tr><td colspan="6" class="p-6 text-center text-slate-500">No matching tasks found.</td></tr>'}
+              ${rows || '<tr><td colspan="6" class="p-6 text-center text-slate-500">No matching tasks found.</td></tr>'}
             </tbody>
           </table>
         </div>
       `;
     }
 
-    // 3. GROUPED VIEW
-    function renderGroupedView(container, filtered) {
+    // GROUPED VIEW
+    function renderGrouped(container, filtered) {
       const groups = ['HR', 'Finance', 'IT', 'Marketing', 'Operations', 'Sales', 'Legal'];
-      container.innerHTML = `<div class="space-y-6"></div>`;
-      const wrapper = container.firstElementChild;
+      let html = '<div class="space-y-6">';
 
       groups.forEach(g => {
         const groupTasks = filtered.filter(t => t.group === g);
         if (groupTasks.length === 0) return;
 
-        const sec = document.createElement('div');
-        sec.className = 'bg-slate-800/80 border border-slate-700 rounded-xl p-4';
-        sec.innerHTML = `
-          <div class="flex items-center justify-between pb-3 border-b border-slate-700 mb-3">
-            <h3 class="font-bold text-md text-purple-300 flex items-center gap-2">📁 ${g} Department</h3>
-            <span class="bg-purple-950/80 text-purple-300 border border-purple-700/50 text-xs px-2.5 py-0.5 rounded-full font-bold">${groupTasks.length} Tasks</span>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            ${groupTasks.map(t => `
-              <div class="bg-slate-900 p-3 rounded-lg border border-slate-700/60 flex flex-col justify-between space-y-2">
-                <div class="font-semibold text-sm text-slate-100">\${t.title}</div>
-                <div class="flex items-center justify-between text-xs text-slate-400">
-                  <span>👤 \${t.assignee}</span>
-                  <span class="px-2 py-0.5 text-[10px] rounded ${getPriorityClass(t.priority)}">${t.priority}</span>
-                </div>
+        let cards = '';
+        groupTasks.forEach(t => {
+          cards += `
+            <div class="bg-slate-900 p-3 rounded-lg border border-slate-700/60 flex flex-col justify-between gap-2">
+              <div class="font-semibold text-sm text-white">${t.title}</div>
+              <div class="flex items-center justify-between text-xs text-slate-400">
+                <span>👤 ${t.assignee}</span>
+                <span class="px-2 py-0.5 text-[10px] rounded ${getPriorityStyle(t.priority)}">${t.priority}</span>
               </div>
-            `).join('')}
+            </div>
+          `;
+        });
+
+        html += `
+          <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-4">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-700 mb-3">
+              <h3 class="font-bold text-md text-purple-300">📁 ${g} Department</h3>
+              <span class="bg-purple-950/80 text-purple-300 border border-purple-700/50 text-xs px-2.5 py-0.5 rounded-full font-bold">${groupTasks.length} Tasks</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">${cards}</div>
           </div>
         `;
-        wrapper.appendChild(sec);
       });
+
+      html += '</div>';
+      container.innerHTML = html;
     }
 
-    // 4. ANALYTICS & PROGRESS BARS VIEW
-    function renderAnalyticsView(container) {
+    // ANALYTICS & PROGRESS BARS VIEW
+    function renderAnalytics(container) {
       const total = tasks.length;
       const completed = tasks.filter(t => t.status === 'Completed').length;
       const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
-
       const groups = ['HR', 'Finance', 'IT', 'Marketing', 'Operations', 'Sales', 'Legal'];
+
+      let groupBars = '';
+      groups.forEach(g => {
+        const gTasks = tasks.filter(t => t.group === g);
+        const gDone = gTasks.filter(t => t.status === 'Completed').length;
+        const gPct = gTasks.length > 0 ? Math.round((gDone / gTasks.length) * 100) : 0;
+
+        groupBars += `
+          <div>
+            <div class="flex justify-between text-xs font-semibold mb-1">
+              <span class="text-slate-200">${g} (${gDone}/${gTasks.length} Completed)</span>
+              <span class="text-purple-300">${gPct}%</span>
+            </div>
+            <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-700/60">
+              <div class="bg-purple-500 h-full rounded-full transition-all duration-300" style="width: ${gPct}%"></div>
+            </div>
+          </div>
+        `;
+      });
 
       container.innerHTML = `
         <div class="space-y-6">
-          <!-- Overall Progress Summary -->
           <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-xl">
             <div class="flex justify-between items-center mb-3">
               <div>
-                <h3 class="text-lg font-bold text-white">Overall Task Completion</h3>
-                <p class="text-xs text-slate-400">Real-time status across all task groups</p>
+                <h3 class="text-lg font-bold text-white">Overall Progress</h3>
+                <p class="text-xs text-slate-400">Total completion rate across all departments</p>
               </div>
               <span class="text-2xl font-black text-blue-400">${percent}%</span>
             </div>
-            
             <div class="w-full bg-slate-900 rounded-full h-4 overflow-hidden border border-slate-700 p-0.5">
               <div class="bg-gradient-to-r from-blue-500 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: ${percent}%"></div>
             </div>
-            
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-700/60 text-center">
-              <div><div class="text-xs text-slate-400">Total Tasks</div><div class="text-xl font-bold text-white">${total}</div></div>
-              <div><div class="text-xs text-slate-400">In Progress</div><div class="text-xl font-bold text-amber-400">${tasks.filter(t => t.status==='In Progress').length}</div></div>
-              <div><div class="text-xs text-slate-400">Under Review</div><div class="text-xl font-bold text-purple-400">${tasks.filter(t => t.status==='Under Review').length}</div></div>
-              <div><div class="text-xs text-slate-400">Completed</div><div class="text-xl font-bold text-emerald-400">${completed}</div></div>
-            </div>
           </div>
 
-          <!-- Breakdown By Task Group -->
           <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-xl">
             <h3 class="text-md font-bold text-white mb-4">Departmental Workload Progress</h3>
-            <div class="space-y-4">
-              ${groups.map(g => {
-                const gTasks = tasks.filter(t => t.group === g);
-                const gDone = gTasks.filter(t => t.status === 'Completed').length;
-                const gPct = gTasks.length > 0 ? Math.round((gDone / gTasks.length) * 100) : 0;
-                
-                return `
-                  <div>
-                    <div class="flex justify-between text-xs font-semibold mb-1">
-                      <span class="text-slate-200">\${g} (${gDone}/${gTasks.length} Completed)</span>
-                      <span class="text-purple-300">\${gPct}%</span>
-                    </div>
-                    <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-700/60">
-                      <div class="bg-purple-500 h-full rounded-full" style="width: \${gPct}%"></div>
-                    </div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
+            <div class="space-y-4">${groupBars}</div>
           </div>
         </div>
       `;
     }
 
-    // UTILITY FUNCTIONS & HANDLERS
-    function getPriorityClass(p) {
+    // UTILITIES
+    function getPriorityStyle(p) {
       if (p === 'Urgent') return 'bg-red-950 text-red-300 border border-red-800/60';
       if (p === 'High') return 'bg-amber-950 text-amber-300 border border-amber-800/60';
       if (p === 'Medium') return 'bg-blue-950 text-blue-300 border border-blue-800/60';
@@ -398,19 +375,23 @@
 
     function updateStatus(id, newStatus) {
       tasks = tasks.map(t => t.id === id ? { ...t, status: newStatus } : t);
-      saveState();
+      saveData();
     }
 
     function deleteTask(id) {
       tasks = tasks.filter(t => t.id !== id);
-      saveState();
+      saveData();
     }
 
-    function toggleModal(open) {
-      document.getElementById('taskModal').classList.toggle('hidden', !open);
+    function openModal() {
+      document.getElementById('taskModal').classList.add('modal-active');
     }
 
-    function handleSaveTask(e) {
+    function closeModal() {
+      document.getElementById('taskModal').classList.remove('modal-active');
+    }
+
+    function handleAddTask(e) {
       e.preventDefault();
       const newTask = {
         id: Date.now(),
@@ -418,58 +399,73 @@
         group: document.getElementById('mGroup').value,
         assignee: document.getElementById('mAssignee').value || 'Unassigned',
         status: document.getElementById('mStatus').value,
-        priority: document.getElementById('mPriority').value,
-        startDate: document.getElementById('mStartDate').value,
-        endDate: document.getElementById('mEndDate').value
+        priority: document.getElementById('mPriority').value
       };
 
       tasks.unshift(newTask);
-      saveState();
-      toggleModal(false);
-      
+      saveData();
+      closeModal();
       document.getElementById('mTitle').value = '';
       document.getElementById('mAssignee').value = '';
     }
 
-    // CSV IMPORT / EXPORT
+    // CSV EXPORT (Native JS, no external dependency)
     function exportCSV() {
-      const csv = Papa.unparse(tasks);
+      if (tasks.length === 0) {
+        alert("No tasks to export!");
+        return;
+      }
+      
+      let csv = "Title,Group,Assignee,Status,Priority\n";
+      tasks.forEach(t => {
+        csv += `"${t.title.replace(/"/g, '""')}","${t.group}","${t.assignee}","${t.status}","${t.priority}"\n`;
+      });
+
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.setAttribute('download', `Task_Report_${new Date().toISOString().slice(0,10)}.csv`);
+      link.setAttribute('download', 'Team_Task_Report.csv');
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     }
 
+    // CSV IMPORT (Native JS CSV Parsing)
     function importCSV(e) {
       const file = e.target.files[0];
       if (!file) return;
 
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: function(results) {
-          const importedTasks = results.data.map((row, idx) => ({
-            id: Date.now() + idx,
-            title: row.Title || row['Task Name'] || row.title || 'Imported Task',
-            group: row.Group || row.Department || row.group || 'HR',
-            assignee: row.Assignee || row['Assigned To'] || row.assignee || 'Unassigned',
-            status: row.Status || row.status || 'Not Started',
-            priority: row.Priority || row.priority || 'Medium',
-            startDate: row['Start Date'] || row.startDate || '',
-            endDate: row['End Date'] || row.endDate || ''
-          }));
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const text = evt.target.result;
+        const lines = text.split('\n');
+        let importedCount = 0;
 
-          tasks = [...importedTasks, ...tasks];
-          saveState();
-          alert(`Successfully imported ${importedTasks.length} tasks!`);
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+
+          const cols = line.split(',').map(c => c.replace(/^"|"\$/g, '').trim());
+          if (cols.length >= 2) {
+            tasks.unshift({
+              id: Date.now() + i,
+              title: cols[0] || 'Imported Task',
+              group: cols[1] || 'HR',
+              assignee: cols[2] || 'Unassigned',
+              status: cols[3] || 'Not Started',
+              priority: cols[4] || 'Medium'
+            });
+            importedCount++;
+          }
         }
-      });
+
+        saveData();
+        alert(`Successfully imported ${importedCount} tasks from CSV!`);
+      };
+      reader.readAsText(file);
     }
 
-    // INITIAL LOAD
+    // INITIAL STARTUP
     renderApp();
   </script>
 </body>
